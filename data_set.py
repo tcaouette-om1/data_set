@@ -70,11 +70,15 @@ def randN_str3(N,M,O):
     return cheese
 
 print(randN_str3(12,6,1))
+def list_1(y,z):
+    list_1=[]
+    for i in range(0,y):
+        list_1.append(randN(z))
+    return list_1
 
-list_1=[]
-for i in range(0,100):
-    list_1.append(randN(9))
-print(list_1)
+list_10 = list_1(100,10)
+print('Testing list 10')
+print(list_10)
 
 list_2=[]
 for i in range(0,100):
@@ -111,11 +115,12 @@ df_list = create_df(files)
 
 print(df_list[0])
 
-def update_diagnosis():
+def update_diagnosis(F_ID):
     column_headers =['FACILITY_ID',	'PATIENT_ID','ENCOUNTER_ID',	
     'DIAGNOSIS_ID','STANDARD_DIAGNOSIS_CODE','STANDARD_DIAGNOSIS_CODE_TYPE','DIAGNOSIS_TYPE','PROBLEM_LIST_DIAGNOSIS_FLAG'
     'PL_DIAGNOSIS_ONSET_DATE''DIAGNOSIS_DTTM','PL_DIAGNOSIS_RESOLUTION_DATE''PL_DIAGNOSIS_STATUS','DIAGNOSIS_CREATED_DTTM','DIAGNOSIS_UPDATED_DTTM']
     df_diagnosis =pd.DataFrame(columns=column_headers)
+    df_diagnosis['FACILITY_ID']= F_ID
     return df_diagnosis
-df = update_diagnosis()
+df = update_diagnosis(list_10)
 print(df.head())
