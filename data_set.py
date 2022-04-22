@@ -10,11 +10,16 @@ import random
 import string
 import decimal
 import hashlib
-'%Y-%m%-d %H:%M:%S'
-dates = pd.date_range(end = datetime.today(), periods = 100).to_pydatetime().tolist()
-"%d%B%Y"
-lots_of_dates = [date_obj.strftime('%Y-%m-%d %H:%M:%S') for date_obj in dates]
-print(lots_of_dates)
+
+
+def con_dates(num_dates):
+    dates = pd.date_range(end = datetime.today(), periods = num_dates).to_pydatetime().tolist()
+    lots_of_dates = [date_obj.strftime('%Y-%m-%d %H:%M:%S') for date_obj in dates]
+    print(lots_of_dates)
+    return lots_of_dates
+
+bunch_of_dates = con_dates(100)
+print(bunch_of_dates)
 
 random.choice(string.ascii_uppercase + string.digits)
 
@@ -46,8 +51,15 @@ def randN_strN(N):
     hash_cake = hashlib.md5(cake.encode())
     return hash_cake.hexdigest()
 
+def randN_str2(N,M):
+    Nmin = pow(10, N-1)
+    Nmax = pow(10, N) - 1
+    Mmin = pow(10, M-1)
+    Mmax = pow(10, M) - 1
+    cheese2 = str(random.randint(Nmin, Nmax)) +"-"+ str(random.randint(Mmin, Mmax)) 
+    return cheese2
 
-def randN_str(N,M,O):
+def randN_str3(N,M,O):
     Nmin = pow(10, N-1)
     Nmax = pow(10, N) - 1
     Mmin = pow(10, M-1)
@@ -57,7 +69,7 @@ def randN_str(N,M,O):
     cheese = str(random.randint(Nmin, Nmax)) +"-"+ str(random.randint(Mmin, Mmax)) +"-"+str(random.randint(Omin, Omax))
     return cheese
 
-print(randN_str(12,6,1))
+print(randN_str3(12,6,1))
 
 list_1=[]
 for i in range(0,100):
@@ -66,9 +78,13 @@ print(list_1)
 
 list_2=[]
 for i in range(0,100):
-    list_2.append(randN_str(9,6,5))
+    list_2.append(randN_str3(9,6,5))
 print(list_2)
 
+list_22=[]
+for i in range(0,100):
+    list_22.append(randN_str2(9,6))
+print(list_22)
 
 list_3=[]
 for i in range(0,100):
@@ -95,8 +111,11 @@ df_list = create_df(files)
 
 print(df_list[0])
 
-def update_diagnosis(df_list):
-    df_diagnosis = df_list[0]
+def update_diagnosis():
+    column_headers =['FACILITY_ID',	'PATIENT_ID','ENCOUNTER_ID',	
+    'DIAGNOSIS_ID','STANDARD_DIAGNOSIS_CODE','STANDARD_DIAGNOSIS_CODE_TYPE','DIAGNOSIS_TYPE','PROBLEM_LIST_DIAGNOSIS_FLAG'
+    'PL_DIAGNOSIS_ONSET_DATE''DIAGNOSIS_DTTM','PL_DIAGNOSIS_RESOLUTION_DATE''PL_DIAGNOSIS_STATUS','DIAGNOSIS_CREATED_DTTM','DIAGNOSIS_UPDATED_DTTM']
+    df_diagnosis =pd.DataFrame(columns=column_headers)
     return df_diagnosis
-df = update_diagnosis(df_list)
+df = update_diagnosis()
 print(df.head())
