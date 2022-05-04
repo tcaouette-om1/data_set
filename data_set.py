@@ -102,11 +102,20 @@ list_2=[]
 for i in range(0,100):
     list_2.append(randN_str3(12,6,1))
 print(list_2)
+list_med_ndc=[]
+for i in range(0,100):
+    list_med_ndc.append(randN_str3(4,4,2))
+print(list_med_ndc)
 
 list_imns=[]
 for i in range(0,100):
     list_imns.append(randN_str3(7,3,0))
 print(list_imns)
+
+list_medad=[]
+for i in range(0,100):
+    list_medad.append(randN_str3(8,1,0))
+print(list_medad)
 
 list_22=[]
 for i in range(0,100):
@@ -154,6 +163,8 @@ list_digid = list_2
 list_encprovid = list_providerid
 list_immunid = list_imns
 list_planid = list_1(100,6)
+list_medadmin = list_medad
+list_med_ndcid = list_med_ndc
 
 def update_diagnosis(F_ID,PTS_ID,ENC_ID,DIG_ID,DIG_DTTM):
     column_headers =['FACILITY_ID',	'PATIENT_ID','ENCOUNTER_ID',	
@@ -239,4 +250,25 @@ def update_insurance(F_ID,PTS_ID,ENC_ID,INSUR_ID,ENC_DTTM,PLAN_ID):
     return df_encounter
 df_insur = update_insurance(list_facid,list_ptsid,list_encid,list_insurid ,bunch_of_dates,list_planid)
 print(df_insur)
-#insurance
+
+list_medad_orderid = [x[:-2] for x in list_medadmin]
+
+def update_med_admin(F_ID,PTS_ID,ENC_ID,MEDAD_ID,MEDAD_OR_ID,ENC_DTTM,MED_NDC):
+    column_headers =['FACILITY_ID',	'PATIENT_ID','ENCOUNTER_ID','MEDICATION_ADMIN_ID','MED_ADMIN_ORDER_ID','MED_ADMIN_STATUS','MED_DESCRIPTION','MED_ADMIN_NDC',
+    	'MEDICATION_ORDER_GPI',	'MEDICATION_ORDER_RXNORM',	'MED_ADMIN_ROUTE_OF_ADMINISTRATION','MED_ADMIN_PROVIDER_ID','MED_ADMIN_START_TIME',	'MED_ADMIN_CREATED_DTTM','MED_ADMIN_UPDATED_DTTM']
+    df_encounter =pd.DataFrame(columns=column_headers)
+    df_encounter['FACILITY_ID'] = F_ID
+    df_encounter['PATIENT_ID'] = PTS_ID
+    df_encounter['ENCOUNTER_ID'] = ENC_ID
+    df_encounter['MEDICATION_ADMIN_ID'] = MEDAD_ID
+    df_encounter['MED_ADMIN_ORDER_ID'] = MEDAD_OR_ID
+    df_encounter['MED_ADMIN_STATUS'] = 'NEW BAG'
+    df_encounter['MED_DESCRIPTION'] = 'INTRAVENOUS SOLUTION'
+    df_encounter['MED_ADMIN_NDC'] = MED_NDC
+    df_encounter['MED_ADMIN_ROUTE_OF_ADMINISTRATION'] = 'IV'
+    df_encounter['MED_ADMIN_START_TIME'] = ENC_DTTM[0]
+    df_encounter['MED_ADMIN_UPDATED_DTTM'] = ENC_DTTM[1]
+    df_encounter =df_encounter[column_headers]
+    return df_encounter
+df_medad = update_med_admin(list_facid,list_ptsid,list_encid,list_medadmin,list_medad_orderid,bunch_of_dates,list_med_ndcid)
+print(df_medad)
