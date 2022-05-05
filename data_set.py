@@ -346,3 +346,25 @@ def update_note(PTS_ID,ENC_ID,PROCOR_ID,ENC_DTTM,NOTE_ID,RESULT_ID,NOTE_TEXT):
 df_note = update_note(list_ptsid,list_encid,list_procedureorid ,bunch_of_dates,list_noteid,list_resultid,note_list10)
 print(df_note)
 
+def update_observations(F_ID,PTS_ID,ENC_ID,MEDAD_OR_ID,ENC_DTTM):
+    column_headers =['FACILITY_ID',	'PATIENT_ID','ENCOUNTER_ID',	'OBSERVATION_ID',	'OBSERVATION_NOTE_FLOWSHEET_NAME',	'OBSERVATION_ATTRIBUTE_LOCAL_NAME',
+    'STANDARD_ATTRIBUTE_CODE',	'OBSERVATION_ATTRIBUTE_VALUE',	'OBSERVATION_ATTRIBUTE_VALUE_UNIT',	'OBSERVATION_DTTM',	'OBSERVATION_PERFORMED_PROVIDER_ID',
+    'OBSERVATION_CATEGORY',	'OBSERVATION_CREATED_DTTM',	'OBSERVATION_UPDATE_DTTM']
+    df_encounter =pd.DataFrame(columns=column_headers)
+    df_encounter['FACILITY_ID'] = F_ID
+    df_encounter['PATIENT_ID'] = PTS_ID
+    df_encounter['ENCOUNTER_ID'] = ENC_ID
+    df_encounter['OBSERVATION_ID'] = MEDAD_OR_ID
+    df_encounter['OBSERVATION_NOTE_FLOWSHEET_NAME'] = 'Encounter Vitals'
+    
+    df_encounter['OBSERVATION_ATTRIBUTE_LOCAL_NAME'] = 'Weight'
+    df_encounter['STANDARD_ATTRIBUTE_CODE'] = 48867
+    df_encounter['OBSERVATION_ATTRIBUTE_VALUE'] = 2100
+    
+    df_encounter['OBSERVATION_CATEGORY'] ='Enc Vitals'
+    df_encounter['OBSERVATION_DTTM'] = ENC_DTTM[0]
+    df_encounter['OBSERVATION_CREATED_DTTM'] = ENC_DTTM[0]
+    df_encounter =df_encounter[column_headers]
+    return df_encounter
+df_observ = update_observations(list_facid,list_ptsid,list_encid,list_medad_orderid,bunch_of_dates)
+print(df_observ)
