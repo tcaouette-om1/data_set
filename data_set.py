@@ -10,6 +10,9 @@ import random
 import string
 import decimal
 import hashlib
+import lorem
+
+lorem.paragraph()
 date_1 = datetime.today()
 end_date = date_1 + timedelta(days=10)
 
@@ -51,6 +54,8 @@ def randN(N):
 	min = pow(10, N-1)
 	max = pow(10, N) - 1
 	return random.randint(min, max)
+
+
 
 def randN_strN(N):
     min = pow(10, N-1)
@@ -96,6 +101,7 @@ def list_1(y,z):
 list_10 = list_1(100,10)
 print('Testing list 10')
 print(list_10)
+list_phys_orderid = list_1(100,5)
 
 
 list_2=[]
@@ -155,6 +161,7 @@ df_list = create_df(files)
 
 print(df_list[0])
 
+list_phys_orderid = list_1(100,5)
 list_encid = list_1(100,10)
 list_facid = list_1(100,10)
 list_insurid = list_1(100,12)
@@ -272,3 +279,36 @@ def update_med_admin(F_ID,PTS_ID,ENC_ID,MEDAD_ID,MEDAD_OR_ID,ENC_DTTM,MED_NDC):
     return df_encounter
 df_medad = update_med_admin(list_facid,list_ptsid,list_encid,list_medadmin,list_medad_orderid,bunch_of_dates,list_med_ndcid)
 print(df_medad)
+
+def update_med_order(F_ID,PTS_ID,ENC_ID,MEDAD_OR_ID,ENC_DTTM,PHYSOR_ID):
+    column_headers =['FACILITY_ID',	'PATIENT_ID','ENCOUNTER_ID','MEDICATION_ORDER_ID',	'MEDICATION_ORDER_STATUS',	'MEDICATION_ORDER_NDC',	'MEDICATION_ORDER_GPI'
+    'MEDICATION_ORDER_RXNORM',	'MEDICATION_ORDER_INDICATION','MEDICATION_ORDER_SIG','MEDICATION_ORDER_ROUTE_OF_ADMINISTRATION','MEDICATION_NAME',	'STRENGTH',
+    'MED_ORDER_UNIT_DOSE',	'HV_DISCRETE_DOSE','HV_DISCR_FREQ_ID',	'MED_ORDER_INFUSION_DOSE',	'MED_ORDER_INFUSION_RATE',
+    'MED_ORDER_TOTAL_DOSE',	'MEDICATION_ORDER_PRESCRIBING_PHYSICIAN_ID',	'MEDICATION_ORDER_REFILLS_AUTHORIZED',	'MEDICATION_ORDER_DAW',	'MED_ORDER_EXPIRE_DATE',
+    'MED_ORDER_START_DATE','MED_ORDER_END_DATE',	'MED_ORDER_CREATED_DTTM',	'MED_ORDER_UPDATED_DTTM']
+    df_encounter =pd.DataFrame(columns=column_headers)
+    df_encounter['FACILITY_ID'] = F_ID
+    df_encounter['PATIENT_ID'] = PTS_ID
+    df_encounter['ENCOUNTER_ID'] = ENC_ID
+    df_encounter['MED_ADMIN_ORDER_ID'] = MEDAD_OR_ID
+    df_encounter['MEDICATION_ORDER_STATUS'] = 'COMPLETED'
+    
+    df_encounter['MEDICATION_ORDER_GPI'] = 132045
+    df_encounter['MEDICATION_ORDER_ROUTE_OF_ADMINISTRATION'] = 'IV'
+    df_encounter['MEDICATION_NAME'] = 'OXYTOCIN 10 UNIT/ML INJECTION SOLUTION'
+    df_encounter['STRENGTH'] = '10 unit/mL'
+    df_encounter['MED_ORDER_UNIT_DOSE'] = 'UNITS'
+    df_encounter['HV_DISCRETE_DOSE'] = '10'
+    df_encounter['HV_DISCR_FREQ_ID'] = 'once PRN'
+    df_encounter['MED_ORDER_INFUSION_DOSE'] = 5
+    df_encounter['MED_ORDER_TOTAL_DOSE'] = 1
+    df_encounter['MEDICATION_ORDER_PRESCRIBING_PHYSICIAN_ID'] = PHYSOR_ID 
+
+    df_encounter['MED_ORDER_START_DATE'] = ENC_DTTM[0]
+    df_encounter['MED_ORDER_END_DATE'] = ENC_DTTM[0]
+    df_encounter['MED_ORDER_CREATED_DTTM'] = ENC_DTTM[0]
+    df_encounter['MED_ORDER_UPDATED_DTTM'] = ENC_DTTM[1]
+    df_encounter =df_encounter[column_headers]
+    return df_encounter
+df_medor = update_med_order(list_facid,list_ptsid,list_encid,list_medad_orderid,bunch_of_dates,list_phys_orderid)
+print(df_medor)
