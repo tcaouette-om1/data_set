@@ -11,6 +11,12 @@ import string
 import decimal
 import hashlib
 
+def sex_list(x):
+    sex_list =['M','F','NA']
+    list_of_sex =[]
+    for i in range(0,x):
+        list_of_sex.append(random.choice(sex_list))
+    return list_of_sex
 
 date_1 = datetime.today()
 end_date = date_1 + timedelta(days=10)
@@ -22,14 +28,18 @@ def con_dates(num_dates):
     lots_of_dates = [date_obj.strftime('%Y-%m-%d %H:%M:%S') for date_obj in dates]
     date_1 = datetime.today()
     end_date = date_1 + timedelta(days=10)
-    dates = pd.date_range(end = end_date, periods = num_dates).to_pydatetime().tolist()
-    lots_of_dates_add = [date_obj.strftime('%Y-%m-%d %H:%M:%S') for date_obj in dates]
-    print(lots_of_dates)
-    print(lots_of_dates_add)
-    return lots_of_dates,lots_of_dates_add
+    dates_updated = pd.date_range(end = end_date, periods = num_dates).to_pydatetime().tolist()
+    lots_of_dates_add = [date_obj.strftime('%Y-%m-%d %H:%M:%S') for date_obj in dates_updated]
+    birth_dates = date_1 - timedelta(days=14610)
+    birthdates = pd.date_range(end = birth_dates, periods = num_dates).to_pydatetime().tolist()
+    lots_of_birthdates = [date_obj.strftime('%Y-%m-%d %H:%M:%S') for date_obj in birthdates]
+ 
+    return lots_of_dates,lots_of_dates_add,lots_of_birthdates
 
 bunch_of_dates = con_dates(100)
 print(bunch_of_dates)
+
+
 
 random.choice(string.ascii_uppercase + string.digits)
 
@@ -174,6 +184,7 @@ list_med_ndcid = list_med_ndc
 list_procedureorid = list_1(100,10)
 list_noteid = list_1(100,5)
 list_resultid = list_1(100,9)
+list_sex = sex_list(100)
 
 
 def update_diagnosis(F_ID,PTS_ID,ENC_ID,DIG_ID,DIG_DTTM):
@@ -368,3 +379,54 @@ def update_observations(F_ID,PTS_ID,ENC_ID,MEDAD_OR_ID,ENC_DTTM):
     return df_encounter
 df_observ = update_observations(list_facid,list_ptsid,list_encid,list_medad_orderid,bunch_of_dates)
 print(df_observ)
+
+def update_patient(F_ID,PTS_ID,SEX,ENC_DTTM):
+    #build functions for zips, deceased indicator, date of death, race, ethnicity.
+    column_headers =['FACILITY_ID',	'PATIENT_ID',	'SEX',	'DATE_OF_BIRTH',	'FIRST_NAME',	'LAST_NAME',	'ZIP_CODE',	'DECEASED_INDICATOR_PRESENT',	'DATE_OF_DEATH',	'RACE',	'ETHNICITY',
+    'PATIENT_CREATED_DTTM',	'PATIENT_UPDATED_DTTM']
+    df_encounter =pd.DataFrame(columns=column_headers)
+    df_encounter['FACILITY_ID'] = F_ID
+    df_encounter['PATIENT_ID'] = PTS_ID
+    df_encounter['SEX'] = SEX
+    df_encounter['DATE_OF_BIRTH'] = ENC_DTTM[2]
+    df_encounter['ZIP_CODE'] = 914
+    
+    df_encounter['DECEASED_INDICATOR_PRESENT'] = 0
+    df_encounter['RACE'] = 'White'
+    df_encounter['ETHNICITY'] = 'Hispanic/Latino'
+    
+    df_encounter['OBSERVATION_CATEGORY'] ='Enc Vitals'
+    df_encounter['PATIENT_CREATED_DTTM'] = ENC_DTTM[0]
+    df_encounter['PATIENT_UPDATED_DTTM'] = ENC_DTTM[1]
+    df_encounter =df_encounter[column_headers]
+    return df_encounter
+df_patient = update_patient(list_facid,list_ptsid,list_sex,bunch_of_dates)
+print(df_patient)
+
+def update_proc_bill(F_ID,PTS_ID,ENC_ID,ENC_DTTM,PROC_ID,BILL_ID,PERFPROV_ID):
+    #build functions for zips, deceased indicator, date of death, race, ethnicity.
+    column_headers =['FACILITY_ID',	'PATIENT_ID',	'ENCOUNTER_ID',	'PROCEDURE_BILLING_ID',	'PROCEDURE_ORDER_ID',	'PROCEDURE_PERFORMING_PROVIDER_ID',	'PROCEDURE_BILLING_PROVIDER_ID',
+    	'PROCEDURE_LOCAL_CODE',	'PROCEDURE_STANDARD_CODE',	'PROCEDURE_STANDARD_CODE_TYPE',	'PROCEDURE_NAME',	'PROCEDURE_CPT_MODIFIER_ONE',	'PROCEDURE_CPT_MODIFIER_TWO',
+        'PROCEDURE_CPT_MODIFIER_THREE',	'PROCEDURE_CPT_MODIFIER_FOUR',	'PROCEDURE_DTTM',	'PROCEDURE_CREATED_DTTM',	'PROCEDURE_UPDATED_DTTM']
+    df_encounter =pd.DataFrame(columns=column_headers)
+    df_encounter['FACILITY_ID'] = F_ID
+    df_encounter['PATIENT_ID'] = PTS_ID
+    df_encounter['ENCOUNTER_ID'] = ENC_ID
+
+    df_encounter['PROCEDURE_BILLING_ID'] = PROC_ID
+    df_encounter['PROCEDURE_ORDER_ID'] = PROC_ID
+    
+    df_encounter['PROCEDURE_PERFORMING_PROVIDER_ID'] = PERFPROV_ID
+    df_encounter['PROCEDURE_BILLING_PROVIDER_ID'] = PERFPROV_ID
+    df_encounter['PROCEDURE_STANDARD_CODE'] = 45768
+    
+    df_encounter['PROCEDURE_STANDARD_CODE_TYPE'] ='CPT'
+    df_encounter['PROCEDURE_NAME'] ='HC MAGNESIUM SERUM/PL'
+    df_encounter['PROCEDURE_DTTM'] = ENC_DTTM[0]
+    df_encounter['PROCEDURE_CREATED_DTTM'] = ENC_DTTM[1]
+    df_encounter['PROCEDURE_UPDATED_DTTM'] = ENC_DTTM[1]
+    df_encounter =df_encounter[column_headers]
+    return df_encounter
+df_procbill = update_proc_bill(list_facid,list_ptsid,list_encid,bunch_of_dates,list_procedureorid,list_noteid,list_encprovid)
+print(df_procbill.dtypes)
+print(df_procbill)
