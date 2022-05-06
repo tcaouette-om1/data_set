@@ -428,5 +428,89 @@ def update_proc_bill(F_ID,PTS_ID,ENC_ID,ENC_DTTM,PROC_ID,BILL_ID,PERFPROV_ID):
     df_encounter =df_encounter[column_headers]
     return df_encounter
 df_procbill = update_proc_bill(list_facid,list_ptsid,list_encid,bunch_of_dates,list_procedureorid,list_noteid,list_encprovid)
-print(df_procbill.dtypes)
 print(df_procbill)
+
+def update_proc_order(F_ID,PTS_ID,ENC_ID,ENC_DTTM,PROC_ID,PERFPROV_ID):
+    #build functions for zips, deceased indicator, date of death, race, ethnicity.
+    column_headers =['FACILITY_ID',	'PATIENT_ID',	'ENCOUNTER_ID',	'PROCEDURE_ORDER_ID',	'PROCEDURE_ORDERING_PROVIDER_ID',	'PROCEDURE_ORDER_TYPE',	'PROCEDURE_ORDER_STATUS',	'PROCEDURE_ORDER_LOCAL_CODE',
+    'PROCEDURE_ORDER_STANDARD_CODE',	'PROCEDURE_ORDER_STANDARD_CODE_TYPE',	'PROCEDURE_NAME',	'PROCEDURE_ORDER_FREQUENCY',	
+    'PROCEDURE_ORDER_DTTM',	'PROCEDURE_ORDER_CREATED_DTTM',	'PROCEDURE_ORDER_UPDATE_DTTM']
+    df_encounter =pd.DataFrame(columns=column_headers)
+    df_encounter['FACILITY_ID'] = F_ID
+    df_encounter['PATIENT_ID'] = PTS_ID
+    df_encounter['ENCOUNTER_ID'] = ENC_ID
+    df_encounter['PROCEDURE_ORDER_ID'] = PROC_ID
+    
+    df_encounter['PROCEDURE_PERFORMING_PROVIDER_ID'] = PERFPROV_ID
+    df_encounter['PROCEDURE_ORDER_TYPE'] = 'LAB'
+    
+    df_encounter['PROCEDURE_ORDER_STATUS'] ='COMPLETED'
+    df_encounter['PROCEDURE_ORDER_STANDARD_CODE_TYPE'] ='Custom'
+    df_encounter['PROCEDURE_NAME'] ='SCREEN'
+    df_encounter['PROCEDURE_ORDER_FREQUENCY'] ='LAB ONE TIME'
+
+    df_encounter['PROCEDURE_ORDER_DTTM'] = ENC_DTTM[0]
+    df_encounter['PROCEDURE_ORDER_CREATED_DTTM'] = ENC_DTTM[1]
+    df_encounter['PROCEDURE_ORDER_UPDATE_DTTM'] = ENC_DTTM[1]
+    df_encounter =df_encounter[column_headers]
+    return df_encounter
+df_procorder = update_proc_order(list_facid,list_ptsid,list_encid,bunch_of_dates,list_procedureorid,list_encprovid)
+print(df_procorder)
+
+def update_provider(ENC_DTTM,PERFPROV_ID):
+    #build functions for zips, deceased indicator, date of death, race, ethnicity.
+    column_headers =['FACILITY_ID',	'PROVIDER_ID',	'PROVIDER_NPI',	'PROVIDER_TYPE',	'PROVIDER_SPECIALTY',	'PROVIDER_SECONDARY_SPECIALTY_CODE_1',	'PROVIDER_SECONDARY_SPECIALTY_CODE_2',
+    	'PROVIDER_SECONDARY_SPECIALTY_CODE_3',	'PROVIDER_CREATED_DTTM',	'PROVIDER_UPDATED_DTTM']
+    df_encounter =pd.DataFrame(columns=column_headers)
+    
+    df_encounter['PROVIDER_ID'] = PERFPROV_ID
+
+    df_encounter['PROVIDER_UPDATED_DTTM'] = ENC_DTTM[1]
+    df_encounter =df_encounter[column_headers]
+    return df_encounter
+df_provider = update_provider(bunch_of_dates,list_encprovid)
+print(df_provider)
+
+def update_result(F_ID,PTS_ID,ENC_ID,ENC_DTTM,PROC_ID,PERFPROV_ID):
+    #build functions for zips, deceased indicator, date of death, race, ethnicity.
+    column_headers =['FACILITY_ID',	'PATIENT_ID',	'ENCOUNTER_ID',	'ORDER_ID',	'RESULT_ID',	'ORDERING_PROVIDER_ID',	'RESULT_TYPE',	'PANEL_NAME',	'TEST_NAME',	'RESULT_VALUE',	
+    'RESULT_UNIT',	'REFERENCE_LOW',	'REFERENCE_HIGH',	'ABNORMAL_FLAG','RESULT_STATUS',	'RESULT_STANDARD_CODE',	'RESULT_NARRATIVE',	'SPECIMEN_COLLECTION_DTTM',
+    'PERFORMING_LAB_ID',	'RESULT_DTTM',	'RESULT_UPDATE_DTTM',	'RESULT_CREATED_DTTM']
+    df_encounter =pd.DataFrame(columns=column_headers)
+    df_encounter['FACILITY_ID'] = F_ID
+    df_encounter['PATIENT_ID'] = PTS_ID
+    df_encounter['ENCOUNTER_ID'] = ENC_ID
+    df_encounter['ORDER_ID'] = PROC_ID
+    
+    df_encounter['RESULT_ID'] = PROC_ID 
+    df_encounter['ORDERING_PROVIDER_ID'] = PERFPROV_ID
+    
+    df_encounter['RESULT_TYPE'] ='LAB'
+    df_encounter['PANEL_NAME'] ='A1c'
+    df_encounter['RESULT_VALUE'] ='CLINICAL LAB'
+    df_encounter['PROCEDURE_ORDER_FREQUENCY'] ='LAB ONE TIME'
+
+    df_encounter['SPECIMEN_COLLECTION_DTTM'] = ENC_DTTM[0]
+    df_encounter['RESULT_DTTM'] = ENC_DTTM[1]
+   
+    df_encounter =df_encounter[column_headers]
+    return df_encounter
+df_result = update_result(list_facid,list_ptsid,list_encid,bunch_of_dates,list_procedureorid,list_encprovid)
+print(df_result)
+
+#used for output of each csv creation
+#'/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/'
+df_dig.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/diagnosis.csv')
+df_enc.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/encounter.csv')
+df_fac.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/facility.csv')
+df_imn.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/immunization.csv')
+df_insur.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/insurance.csv')
+df_medad.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/med_admin.csv')
+df_medor.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/med_order.csv')
+df_note.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/note.csv')
+df_observ.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/observation.csv')
+df_patient.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/patient.csv')
+df_procbill.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/procedure_bill.csv')
+df_procorder.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/procedure_order.csv')
+df_provider.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/provider.csv')
+df_result.to_csv('/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/result.csv')
