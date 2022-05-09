@@ -150,25 +150,7 @@ print('PROVIDER ID')
 print(ndigit)
 list_providerid = ndigit
 
-dir = r"/Users/tobiascaouette/Documents/Process_Validation/TEST_FILES/"
-def find_files(dir):
-    list_files=[]
-    for file in os.listdir(dir):
-        if file.endswith(".csv"):
-            list_files.append(os.path.join(dir, file))
-            print(os.path.join(dir, file))
-    return sorted(list_files)
 
-files= find_files(dir)
-print(files)
-
-def create_df(list_of_files):
-    df_list = [pd.read_csv(file) for file in list_of_files]
-    return df_list
-
-df_list = create_df(files)
-
-print(df_list[0])
 
 list_phys_orderid = list_1(100,5)
 list_encid = list_1(100,10)
