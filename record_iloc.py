@@ -15,28 +15,24 @@ import hashlib
 ctx_deid = snowflake.connector.connect(
     user='tcaouette',
     password='d0Nt8@ckD0WN!',
-    account='om1'
+    account='om1',
+    database ='research',
+    schema ='bd_request'
     )
-
+#select * from research.bd_request.test_syndax_01
 cs_deid = ctx_deid.cursor()
 
 sql = f"""
-    select * from research.bd_request.test_syndax_01
+    with blah as (
+SELECT    METADATA$FILENAME AS FILE_NAME,
+    METADATA$FILE_ROW_NUMBER  AS FILE_ROW_NUM,
+    concat('@test_files/',file_name,'/row_num_',file_row_num) as file_row,
+    t.$1, t.$2,t.$3,t.$4,t.$5,t.$6,t.$7,t.$8,t.$9,t.$10,t.$11,t.$12,t.$13,t.$14,t.$15,t.$16,t.$17,t.$18,t.$19,t.$20
+FROM   @test_files t
+)
+select * from blah
 
 """
-def fetch_pandas_old(cur, sql):
-    cur.execute(sql)
-    rows = 0
-    while True:
-        dat = cur.fetchmany(50000)
-        if not dat:
-            break
-        a = [cs_deid.description[i][0] for i in range(len(cs_deid.description))]
-        df = pd.DataFrame(dat, columns=cur.description)
-        rows += df.shape[0]
-    return df
-
-
 n=100000000
 
 def fetch_pandas(cur, sql):
