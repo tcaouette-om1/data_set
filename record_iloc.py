@@ -12,6 +12,8 @@ import decimal
 import hashlib
 
 
+
+
 ctx_deid = snowflake.connector.connect(
     user='tcaouette',
     password='d0Nt8@ckD0WN!',
