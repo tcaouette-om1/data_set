@@ -10,6 +10,7 @@ import random
 import string
 import decimal
 import hashlib
+import pytest
 
 dir = r"/Users/tobiascaouette/Documents/Process_Validation/TEST_FILES/"
 def find_files(dir):
