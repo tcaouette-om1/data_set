@@ -27,5 +27,33 @@ ctx_id = snowflake.connector.connect(
 
 cs_id = ctx_id.cursor()
 
+schema = 'UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
 
 
+def fetch_pandas_old(cur, sql):
+    cur.execute(sql)
+    rows = 0
+    while True:
+        dat = cur.fetchmany(50000)
+        if not dat:
+            break
+        df = pd.DataFrame(dat, columns=cur.description)
+        rows += df.shape[0]
+    return df
+
+sql_tables = f'''show tables in {schema} ''' 
+
+df_tables = fetch_pandas_old(cs_id,sql_tables)
+df_tables.columns =['created_on','table_name','database_name','schema_name','kind','comment',
+'cluster_by','rows','bytes','owner','retention_time','auto_cluster','change_tracking','search_op',
+'search_op_prog','search_op_bytes','is_external']
+
+print(df_tables.head())
+
+list_meta =[]
+for col in df_tables.columns:
+    list_meta.append(col)
+
+print(list_meta)
+
+print(df_tables.columns.to_list())
