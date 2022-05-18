@@ -10,17 +10,19 @@ import random
 import string
 import decimal
 import hashlib
+import sqlalchemy
 
 
 role = 'ngr_exact_sciences'
 database = 'ngr_exact_sciences'
-
+schema ='UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
 ctx_id = snowflake.connector.connect(
     user = 'tcaouette',
     account = "om1id",
     authenticator = 'externalbrowser',
     role = role,
     database = database,
+    schema = schema,
     warehouse = 'LOAD_WH',
     autocommit = False
     )
@@ -50,10 +52,21 @@ df_tables.columns =['created_on','table_name','database_name','schema_name','kin
 
 print(df_tables.head())
 
-list_meta =[]
-for col in df_tables.columns:
-    list_meta.append(col)
-
-print(list_meta)
-
 print(df_tables.columns.to_list())
+table_names = df_tables['table_name'].to_list()
+print(table_names)
+
+
+# query each table in list  --> create df for each table --> find the dtype of each field in the table and run a stats query on each field in table
+
+# base query
+table_col =['table_name',	'schema_name',	'column_name',	'data_type',	'null',	'default',	'kind',	'expression',	'comment',	'database_name',	'autoincrement']
+df_all_list =[]
+for table in table_names:
+    select_columns = f'''show columns in table {table}'''
+df = fetch_pandas_old(cs_id,select_columns)
+df.columns=table_col
+
+    #df_all_list.append(fetch_pandas_old(cs_id,select_all))
+
+print(df)
