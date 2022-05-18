@@ -59,13 +59,15 @@ print(table_names)
 
 # query each table in list  --> create df for each table --> find the dtype of each field in the table and run a stats query on each field in table
 
-# base query
+# this gets the column names to re-name each table...
 table_col =['table_name',	'schema_name',	'column_name',	'data_type',	'null',	'default',	'kind',	'expression',	'comment',	'database_name',	'autoincrement']
 df_all_list =[]
 for table in table_names:
     select_columns = f'''show columns in table {table}'''
 df = fetch_pandas_old(cs_id,select_columns)
 df.columns=table_col
+
+#create dictionary that has table name the list of column names... apply at will
 
     #df_all_list.append(fetch_pandas_old(cs_id,select_all))
 
