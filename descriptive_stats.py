@@ -36,7 +36,7 @@ def fetch_pandas_old(cur, sql):
     cur.execute(sql)
     rows = 0
     while True:
-        dat = cur.fetchmany(50000)
+        dat = cur.fetchmany(500000000000000)
         if not dat:
             break
         df = pd.DataFrame(dat, columns=cur.description)
@@ -102,11 +102,20 @@ for k in table_names:
     all_sql_list.append(df_sql)   
 print(all_sql_list)
 df_list =[]   
+
+# new take on the query function--- this one works better the other one doesn't account for empty tables
+def new_query(query,cs_id):
+    cs_id.execute(query)
+    df = pd.DataFrame.from_records(iter(cs_id), columns=[x[0] for x in cs_id.description])
+    return df
+
+
 for sql in all_sql_list:
-    df_list.append(fetch_pandas_old(cs_id,sql))
-print(df_list)
-#all_df_list.append(fetch_pandas_old(cs_id,df_sql))
+    #df_list.append(fetch_pandas_old(cs_id,sql))
+    df_list.append(new_query(sql,cs_id))
     #time.sleep(5.5)
+print(df_list)
+print(len(df_list))
 
 #df_dict ={}
 #for k,v in zip(table_names,all_df_list):
