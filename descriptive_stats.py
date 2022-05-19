@@ -31,7 +31,7 @@ cs_id = ctx_id.cursor()
 
 schema = 'UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
 
-
+#refactor... with the new function that works a lot better
 def fetch_pandas_old(cur, sql):
     cur.execute(sql)
     rows = 0
@@ -117,6 +117,11 @@ for sql in all_sql_list:
 print(df_list)
 print(len(df_list))
 
+#dictionary tablenames and dataframes
+df_dict = {}
+for k, v in zip(table_names, df_list):
+   df_dict.setdefault(k, []).append(v)
+print(df_dict)
 #df_dict ={}
 #for k,v in zip(table_names,all_df_list):
 ##     df_dict.setdefault(k,v)
