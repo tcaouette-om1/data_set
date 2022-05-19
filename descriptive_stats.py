@@ -43,7 +43,7 @@ def fetch_pandas_old(cur, sql):
         rows += df.shape[0]
     return df
 
-sql_tables = f'''show tables in {schema} ''' 
+sql_tables = f'''show tables in {schema} ''' #always ordered by table_name alphabetically
 
 df_tables = fetch_pandas_old(cs_id,sql_tables)
 df_tables.columns =['created_on','table_name','database_name','schema_name','kind','comment',
@@ -63,9 +63,8 @@ print(table_names)
 table_col =['table_name',	'schema_name',	'column_name',	'data_type',	'null',	'default',	'kind',	'expression',	'comment',	'database_name',	'autoincrement']
 df_all_list =[]
 for table in table_names:
-    select_columns = f'''show columns in table {table}'''
+    select_columns = f'''show columns in table {table}''' #always from left to right
     df_all_list.append(fetch_pandas_old(cs_id,select_columns))
-#df.columns=table_col
 
 #normalize and apply the column headers to the df so that is in the correct format.
 norm_df_list =[]
@@ -86,12 +85,31 @@ for df in norm_df_list:
 
 #print(list_columns)
 
-#dictionary!
+#dictionary! zip table_names & list_columns --> {table_name:[[column_names]]}
 table_col_dict = {}
 for k, v in zip(table_names, list_columns):
    table_col_dict.setdefault(k, []).append(v)
 
-print(table_col_dict['ENCOUNTER'][0])
+#to access column headers for each df i=table_name [0] accesses the column value list which will be used to apply the new df headers
+for i in table_names:
+    print(table_col_dict[i][0])
+
+#test run will be limit of 10 rows per dataframe
+# new dfs
+all_df_list =[]
+for k in table_names:
+    df_sql = f'''select * from {k} limit 10'''
+    all_df_list.append(fetch_pandas_old(cs_id,df_sql))
+
+df_dict ={}
+for k,v in zip(table_names,all_df_list):
+     df_dict.setdefault(k,v)
+
+print(df_dict)
+
+#.columns = table_col_dict[i][0]
+
+#print(table_col_dict['ENCOUNTER'][0])
 # the calculation of the descriptive stats can be done with python or sql... will mostlikely go with python and iterating through each df will be easier that way
 
 all_sql = f'''
