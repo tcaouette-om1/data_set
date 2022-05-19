@@ -122,15 +122,16 @@ df_dict = {}
 for k, v in zip(table_names, df_list):
    df_dict.setdefault(k, []).append(v)
 print(df_dict)
-#df_dict ={}
-#for k,v in zip(table_names,all_df_list):
-##     df_dict.setdefault(k,v)
 
-#print(df_dict)
+#select the 
+for i in table_names:
+    df_dict[i]
+print(df_dict['ENCOUNTER'][0])
+df_encounter = df_dict['ENCOUNTER'][0]
+print(df_encounter.dtypes)
 
-#.columns = table_col_dict[i][0]
 
-#print(table_col_dict['ENCOUNTER'][0])
+# start on the calculation bit next then refactor
 # the calculation of the descriptive stats can be done with python or sql... will mostlikely go with python and iterating through each df will be easier that way
 
 all_sql = f'''
