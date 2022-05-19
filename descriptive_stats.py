@@ -101,8 +101,10 @@ for k in table_names:
     df_sql = f'''select * from {k} limit 10'''
     all_sql_list.append(df_sql)   
 print(all_sql_list)
-    
-    
+df_list =[]   
+for sql in all_sql_list:
+    df_list.append(fetch_pandas_old(cs_id,sql))
+print(df_list)
 #all_df_list.append(fetch_pandas_old(cs_id,df_sql))
     #time.sleep(5.5)
 
