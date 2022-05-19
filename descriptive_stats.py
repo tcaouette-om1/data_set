@@ -11,7 +11,7 @@ import string
 import decimal
 import hashlib
 import sqlalchemy
-
+import time
 
 role = 'ngr_exact_sciences'
 database = 'ngr_exact_sciences'
@@ -91,21 +91,26 @@ for k, v in zip(table_names, list_columns):
    table_col_dict.setdefault(k, []).append(v)
 
 #to access column headers for each df i=table_name [0] accesses the column value list which will be used to apply the new df headers
-for i in table_names:
-    print(table_col_dict[i][0])
+##for i in table_names:
+#    print(table_col_dict[i][0])
 
 #test run will be limit of 10 rows per dataframe
 # new dfs
-all_df_list =[]
+all_sql_list =[]
 for k in table_names:
     df_sql = f'''select * from {k} limit 10'''
-    all_df_list.append(fetch_pandas_old(cs_id,df_sql))
+    all_sql_list.append(df_sql)   
+print(all_sql_list)
+    
+    
+#all_df_list.append(fetch_pandas_old(cs_id,df_sql))
+    #time.sleep(5.5)
 
-df_dict ={}
-for k,v in zip(table_names,all_df_list):
-     df_dict.setdefault(k,v)
+#df_dict ={}
+#for k,v in zip(table_names,all_df_list):
+##     df_dict.setdefault(k,v)
 
-print(df_dict)
+#print(df_dict)
 
 #.columns = table_col_dict[i][0]
 
