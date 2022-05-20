@@ -160,6 +160,8 @@ for pair in pairs:
     print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
 
+#add if statements --- when column i.e. pair[1] name is like age df_dict[pair[0]][0][pair[1]].astype('int').describe() ---something like this might do the trick
+
 #by table
 for table in table_names:
     print(f'''Describing Table {table}  == {df_dict[table][0].astype('object').describe()}''')
