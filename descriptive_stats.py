@@ -152,6 +152,7 @@ for k, v in table_col_dict.items():
 #this runs through every table and every column... will need to add more info on the output showing which column and table it is from.
 #need to add stats to this ---- every column is an object ---> int or float and use describe ----> need to figure out which columns are best for this
 # table and column level
+# directory where I'll test output then will just write to snowflake db '/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/result.csv'
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
