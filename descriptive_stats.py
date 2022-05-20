@@ -153,7 +153,9 @@ for k, v in table_col_dict.items():
 #need to add stats to this ---- every column is an object ---> int or float and use describe ----> need to figure out which columns are best for this
 # table and column level
 # directory where I'll test output then will just write to snowflake db '/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/result.csv'
-# add mean, mode, std i.e. variance... to this and the summary/descriptive calculations will be done.
+# add mean, mode, std i.e. variance... to this and the summary/descriptive calculations will be done. 
+# after summary stats done... need to flag when out of spec... Not just the comparison between raw and transformed... which is already completed by profiler... 
+# but this flag will be displayed that it is under or over predefined limits.
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
@@ -161,6 +163,7 @@ for pair in pairs:
     print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100}''')
+    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
 
 
 #add if statements --- when column i.e. pair[1] name is like age df_dict[pair[0]][0][pair[1]].astype('int').describe() ---something like this might do the trick
@@ -185,12 +188,3 @@ for table in table_names:
 
 #print(df_dict['PATIENT'][0].astype('object').describe())
 
-#continuous_sql = f'''
-#SELECT MIN({column}) AS value_min, 
-#       MAX({column}) AS value_max, 
-#       AVG({column}) AS value_avg, 
-#       STDDEV({column}) AS value_stddev, 
-#       VAR({column}) AS value_var
-#FROM {table}
-#WHERE {column} IS NOT NULL
-#'''
