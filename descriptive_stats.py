@@ -160,8 +160,8 @@ for pair in pairs:
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
 
 #by table
-for table in pairs:
-    print(f'''Describing Table {table[0]}  == {df_dict[table[0]][0].astype('object').describe()}''')
+for table in table_col:
+    print(f'''Describing Table {table}  == {df_dict[table][0].astype('object').describe()}''')
 
 #count is the count of objects in the column --- does not include null
 #unique is the count of unique items in the column
