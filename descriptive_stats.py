@@ -155,12 +155,14 @@ pairs = [   (key, value)
             for value in values[0] ]
 for pair in pairs:
     print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
+    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
+    print(f'''Describing Table {pair[0]}  == {df_dict[pair[0]][0].astype('object').describe()}''')
+
 #pair[0] = table name, pair[1] = column name
 # create function to loop through all tables and all columns... apply summary/descriptive stats ____ 
 # the stats will have to be exported somewhere... CSV for now... database better for tableau hookup... or pyscript.
 
-
+#print(df_dict['PATIENT'][0].astype('object').describe())
 
 #continuous_sql = f'''
 #SELECT MIN({column}) AS value_min, 
