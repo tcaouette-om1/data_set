@@ -153,14 +153,15 @@ for k, v in table_col_dict.items():
 #need to add stats to this ---- every column is an object ---> int or float and use describe ----> need to figure out which columns are best for this
 # table and column level
 # directory where I'll test output then will just write to snowflake db '/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/result.csv'
+# add mean, mode, std i.e. variance... to this and the summary/descriptive calculations will be done.
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
 for pair in pairs:
     print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
-    if 'AGE' in pair[1]:
-        print(df_dict[pair[0]][0][pair[1]].astype('int').describe()) #TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'    
+    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100}''')
+
 
 #add if statements --- when column i.e. pair[1] name is like age df_dict[pair[0]][0][pair[1]].astype('int').describe() ---something like this might do the trick
 #if 'AGE' in pair[1]:
