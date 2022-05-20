@@ -159,8 +159,12 @@ pairs = [   (key, value)
 for pair in pairs:
     print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
+    if 'AGE' in pair[1]:
+        print(df_dict[pair[0]][0][pair[1]].astype('int').describe()) #TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'    
 
 #add if statements --- when column i.e. pair[1] name is like age df_dict[pair[0]][0][pair[1]].astype('int').describe() ---something like this might do the trick
+#if 'AGE' in pair[1]:
+#  df_dict[pair[0]][0][pair[1]].astype('int').describe()     
 
 #by table
 for table in table_names:
