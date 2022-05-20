@@ -127,10 +127,11 @@ print(df_dict)
 for i in table_names:
     df_dict[i]
 print(df_dict['ENCOUNTER'][0])
-df_encounter = df_dict['ENCOUNTER'][0]
-print(df_encounter.dtypes)
+df_encounter = df_dict['ENCOUNTER'][0] #dataframe!
 
-
+print(df_dict['ENCOUNTER'][0]['SOURCE_PATIENT_ID'].unique())
+print(df_dict['ENCOUNTER'][0].groupby("SOURCE_PATIENT_ID")["SOURCE_PATIENT_ID"].count()) #titanic["Pclass"].value_counts() same
+print(df_dict['ENCOUNTER'][0].count())
 # start on the calculation bit next then refactor
 # the calculation of the descriptive stats can be done with python or sql... will mostlikely go with python and iterating through each df will be easier that way
 
