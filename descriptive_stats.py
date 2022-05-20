@@ -171,16 +171,19 @@ for pair in pairs:
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Min Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().min()}''')
 
 
+#by table
+for table in table_names:
+    print(f'''Describing Table {table}  == {df_dict[table][0].astype('object').describe()}''')
 
+
+# ------next suite will be the implausible values ------
 
 
 #add if statements --- when column i.e. pair[1] name is like age df_dict[pair[0]][0][pair[1]].astype('int').describe() ---something like this might do the trick
 #if 'AGE' in pair[1]:
 #  df_dict[pair[0]][0][pair[1]].astype('int').describe()     
 
-#by table
-for table in table_names:
-    print(f'''Describing Table {table}  == {df_dict[table][0].astype('object').describe()}''')
+
 
 #count is the count of objects in the column --- does not include null
 #unique is the count of unique items in the column
