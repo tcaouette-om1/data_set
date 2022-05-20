@@ -129,16 +129,35 @@ for i in table_names:
 print(df_dict['ENCOUNTER'][0])
 df_encounter = df_dict['ENCOUNTER'][0] #dataframe!
 
+#table column dictionary
+print(table_col_dict)
+
+
+
+#accessing the dictionary df_dict['KEY'][value = 0 is the dataframe][columns in the value] 
+#dictionary form so it's easier to maintain and keep track of which dataframe is which -->faster compute too
+#will need column list dictionary built to apply the table, and columns
+#['TABLE'][list 0 index]['COLUMN'].stat or functions
 print(df_dict['ENCOUNTER'][0]['SOURCE_PATIENT_ID'].unique())
 print(df_dict['ENCOUNTER'][0].groupby("SOURCE_PATIENT_ID")["SOURCE_PATIENT_ID"].count()) #titanic["Pclass"].value_counts() same
 print(df_dict['ENCOUNTER'][0].count())
 # start on the calculation bit next then refactor
 # the calculation of the descriptive stats can be done with python or sql... will mostlikely go with python and iterating through each df will be easier that way
+for k, v in table_col_dict.items():
+    print(df_dict[k][0][v[0]])
 
-all_sql = f'''
-select * from {table} limit 10
-'''
 
+#key value pairs... (table, column), chose tuple so it's not mutable
+#this will be a function with output being the stats and counts
+#this runs through every table and every column... will need to add more info on the output showing which column and table it is from.
+pairs = [   (key, value) 
+            for key, values in table_col_dict.items() 
+            for value in values[0] ]
+for pair in pairs:
+    print(df_dict[pair[0]][0][pair[1]].unique())
+#pair[0] = table name, pair[1] = column name
+# create function to loop through all tables and all columns... apply summary/descriptive stats ____ 
+# the stats will have to be exported somewhere... CSV for now... database better for tableau hookup... or pyscript.
 
 
 
