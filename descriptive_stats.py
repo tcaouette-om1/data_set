@@ -150,6 +150,7 @@ for k, v in table_col_dict.items():
 #key value pairs... (table, column), chose tuple so it's not mutable
 #this will be a function with output being the stats and counts
 #this runs through every table and every column... will need to add more info on the output showing which column and table it is from.
+#need to add stats to this ---- every column is an object ---> int or float and use describe ----> need to figure out which columns are best for this
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
@@ -157,6 +158,14 @@ for pair in pairs:
     print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
     print(f'''Describing Table {pair[0]}  == {df_dict[pair[0]][0].astype('object').describe()}''')
+
+#count is the count of objects in the column --- does not include null
+#unique is the count of unique items in the column
+#top is the Max count in the column
+#freq is the number of time the top appears in column
+
+
+
 
 #pair[0] = table name, pair[1] = column name
 # create function to loop through all tables and all columns... apply summary/descriptive stats ____ 
