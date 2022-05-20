@@ -95,10 +95,10 @@ for k, v in zip(table_names, list_columns):
 #    print(table_col_dict[i][0])
 
 #test run will be limit of 10 rows per dataframe
-# new dfs
+# new dfs add limit 10 for testing
 all_sql_list =[]
 for k in table_names:
-    df_sql = f'''select * from {k} limit 10'''
+    df_sql = f'''select * from {k} '''
     all_sql_list.append(df_sql)   
 print(all_sql_list)
 df_list =[]   
@@ -151,13 +151,17 @@ for k, v in table_col_dict.items():
 #this will be a function with output being the stats and counts
 #this runs through every table and every column... will need to add more info on the output showing which column and table it is from.
 #need to add stats to this ---- every column is an object ---> int or float and use describe ----> need to figure out which columns are best for this
+# table and column level
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
 for pair in pairs:
     print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
-    print(f'''Describing Table {pair[0]}  == {df_dict[pair[0]][0].astype('object').describe()}''')
+
+#by table
+for table in pairs:
+    print(f'''Describing Table {table[0]}  == {df_dict[table[0]][0].astype('object').describe()}''')
 
 #count is the count of objects in the column --- does not include null
 #unique is the count of unique items in the column
