@@ -12,6 +12,7 @@ import decimal
 import hashlib
 import sqlalchemy
 import time
+import matplotlib
 
 role = 'ngr_exact_sciences'
 database = 'ngr_exact_sciences'
@@ -164,32 +165,43 @@ table_names = tables_schema(schema)
 
 df_dict, table_col_dict = rename_columns(table_names)
 
+file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/group_by_count.csv'
+list_stat_df =[]
+
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
 for pair in pairs:
     #print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().mean()}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEDIAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().median()}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Deviation == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().std()}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Max Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().max()}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Min Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().min()}''')
+    list_stat_df.append(pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'Count'))) #list of groupby count dfs
+    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100}''')
+    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
+    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().mean()}''')
+    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEDIAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().median()}''')
+    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Deviation == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().std()}''')
+    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Max Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().max()}''')
+    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Min Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().min()}''')
 
 
 #by table
-for table in table_names:
-    print(f'''Describing Table {table}  == {df_dict[table][0].astype('object').describe()}''')
+#for table in table_names:
+#    print(f'''Describing Table {table}  == {df_dict[table][0].astype('object').describe()}''')
 
 
-# ------next suite will be the implausible values ------
+#------comaprative raw and transformed-- run stats---- df_raw minus df_tansformed 
+#----- visulaize the counts------
+#------next suite will be the implausible values ------
 
-
+#for dfs in list_stat_df:
+#    print(dfs)
 #add if statements --- when column i.e. pair[1] name is like age df_dict[pair[0]][0][pair[1]].astype('int').describe() ---something like this might do the trick
-#if 'AGE' in pair[1]:
+#if 'AGE' in pair[1]:   
 #  df_dict[pair[0]][0][pair[1]].astype('int').describe()     
+
+#to output properly add schema, table then normaize the columns counts might need to pivot after creation... create tables in snowflake
+pd.concat(list_stat_df).to_csv(file_name) 
+
 
 
 
