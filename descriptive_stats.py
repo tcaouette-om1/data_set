@@ -32,6 +32,12 @@ cs_id = ctx_id.cursor()
 schema = 'UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
 
 #refactor... with the new function that works a lot better
+# new take on the query function--- this one works better the other one doesn't account for empty tables
+def new_query(query,cs_id): #this one is the better one
+    cs_id.execute(query)
+    df = pd.DataFrame.from_records(iter(cs_id), columns=[x[0] for x in cs_id.description])
+    return df
+
 def fetch_pandas_old(cur, sql):
     cur.execute(sql)
     rows = 0
@@ -43,94 +49,92 @@ def fetch_pandas_old(cur, sql):
         rows += df.shape[0]
     return df
 
-sql_tables = f'''show tables in {schema} ''' #always ordered by table_name alphabetically
+def tables_schema(schema):
+    sql_tables = f'''show tables in {schema} ''' #always ordered by table_name alphabetically
 
-df_tables = fetch_pandas_old(cs_id,sql_tables)
-df_tables.columns =['created_on','table_name','database_name','schema_name','kind','comment',
-'cluster_by','rows','bytes','owner','retention_time','auto_cluster','change_tracking','search_op',
-'search_op_prog','search_op_bytes','is_external']
+    df_tables = fetch_pandas_old(cs_id,sql_tables)
+    df_tables.columns =['created_on','table_name','database_name','schema_name','kind','comment',
+    'cluster_by','rows','bytes','owner','retention_time','auto_cluster','change_tracking','search_op',
+    'search_op_prog','search_op_bytes','is_external']
 
-print(df_tables.head())
+    table_names = df_tables['table_name'].to_list()
+    return table_names
 
-print(df_tables.columns.to_list())
-table_names = df_tables['table_name'].to_list()
-print(table_names)
 
 
 # query each table in list  --> create df for each table --> find the dtype of each field in the table and run a stats query on each field in table
 
 # need to create the dictionary here ---  {table_name:[columns]}   # this gets the column names to re-name each table...
-table_col =['table_name',	'schema_name',	'column_name',	'data_type',	'null',	'default',	'kind',	'expression',	'comment',	'database_name',	'autoincrement']
-df_all_list =[]
-for table in table_names:
-    select_columns = f'''show columns in table {table}''' #always from left to right
-    df_all_list.append(fetch_pandas_old(cs_id,select_columns))
+def rename_columns(table_names):
+    table_col =['table_name',	'schema_name',	'column_name',	'data_type',	'null',	'default',	'kind',	'expression',	'comment',	'database_name',	'autoincrement']
+    df_all_list =[]
+    for table in table_names:
+        select_columns = f'''show columns in table {table}''' #always from left to right
+        df_all_list.append(fetch_pandas_old(cs_id,select_columns))
 
-#normalize and apply the column headers to the df so that is in the correct format.
-norm_df_list =[]
-for df in df_all_list:
-    df.columns = table_col
-    norm_df_list.append(df)
-#create dictionary that has table name the list of column names... apply at will
-#column names are needed to rename the columns in the next section. without these lists the headers are not in a good format.
+    #normalize and apply the column headers to the df so that is in the correct format.
+    #create dictionary that has table name the list of column names... apply at will
+    #column names are needed to rename the columns in the next section. without these lists the headers are not in a good format.
+
+    norm_df_list =[]
+    for df in df_all_list:
+        df.columns = table_col
+        norm_df_list.append(df)
+    print(norm_df_list)
+    #   creates list of lists, those lists are the column names of every table---> should create dictionary with key being table name values list of column names
+    list_columns =[]
+    for df in norm_df_list:
+        list_columns.append(df['column_name'].tolist())
+    #dictionary! zip table_names & list_columns --> {table_name:[[column_names]]}
+    table_col_dict = {}
+    for k, v in zip(table_names, list_columns):
+        table_col_dict.setdefault(k, []).append(v)
+    #to access column headers for each df i=table_name [0] accesses the column value list which will be used to apply the new df headers
+    ##for i in table_names:
+            #    print(table_col_dict[i][0])
+
+    #test run will be limit of 10 rows per dataframe
+    # new dfs add limit 10 for testing
+    all_sql_list =[]
+    for k in table_names:
+        df_sql = f'''select * from {k} '''
+        all_sql_list.append(df_sql)   
+    print(all_sql_list)
+    df_list =[]   
+
+    for sql in all_sql_list:
+    #df_list.append(fetch_pandas_old(cs_id,sql))
+        df_list.append(new_query(sql,cs_id))
+    #time.sleep(5.5)
+
+
+    #dictionary tablenames and dataframes
+    df_dict = {}
+    for k, v in zip(table_names, df_list):
+        df_dict.setdefault(k, []).append(v)
+    print(df_dict)
+
+    return df_dict, table_col_dict
+
+
 
     #df_all_list.append(fetch_pandas_old(cs_id,select_all))
 
-print(norm_df_list)
-#creates list of lists, those lists are the column names of every ---> should create dictionary with key being table name values list of column names
-list_columns =[]
-for df in norm_df_list:
-    list_columns.append(df['column_name'].tolist())
 
 
-#print(list_columns)
-
-#dictionary! zip table_names & list_columns --> {table_name:[[column_names]]}
-table_col_dict = {}
-for k, v in zip(table_names, list_columns):
-   table_col_dict.setdefault(k, []).append(v)
-
-#to access column headers for each df i=table_name [0] accesses the column value list which will be used to apply the new df headers
-##for i in table_names:
-#    print(table_col_dict[i][0])
-
-#test run will be limit of 10 rows per dataframe
-# new dfs add limit 10 for testing
-all_sql_list =[]
-for k in table_names:
-    df_sql = f'''select * from {k} '''
-    all_sql_list.append(df_sql)   
-print(all_sql_list)
-df_list =[]   
-
-# new take on the query function--- this one works better the other one doesn't account for empty tables
-def new_query(query,cs_id):
-    cs_id.execute(query)
-    df = pd.DataFrame.from_records(iter(cs_id), columns=[x[0] for x in cs_id.description])
-    return df
 
 
-for sql in all_sql_list:
-    #df_list.append(fetch_pandas_old(cs_id,sql))
-    df_list.append(new_query(sql,cs_id))
-    #time.sleep(5.5)
-print(df_list)
-print(len(df_list))
 
-#dictionary tablenames and dataframes
-df_dict = {}
-for k, v in zip(table_names, df_list):
-   df_dict.setdefault(k, []).append(v)
-print(df_dict)
+
 
 #select the 
-for i in table_names:
-    df_dict[i]
-print(df_dict['ENCOUNTER'][0])
-df_encounter = df_dict['ENCOUNTER'][0] #dataframe!
+#for i in table_names:
+##    df_dict[i]
+#print(df_dict['ENCOUNTER'][0])
+#df_encounter = df_dict['ENCOUNTER'][0] #dataframe!
 
 #table column dictionary
-print(table_col_dict)
+#print(table_col_dict)
 
 
 
@@ -138,13 +142,13 @@ print(table_col_dict)
 #dictionary form so it's easier to maintain and keep track of which dataframe is which -->faster compute too
 #will need column list dictionary built to apply the table, and columns
 #['TABLE'][list 0 index]['COLUMN'].stat or functions
-print(df_dict['ENCOUNTER'][0]['SOURCE_PATIENT_ID'].unique())
-print(df_dict['ENCOUNTER'][0].groupby("SOURCE_PATIENT_ID")["SOURCE_PATIENT_ID"].count()) #titanic["Pclass"].value_counts() same
-print(df_dict['ENCOUNTER'][0].count())
+#print(df_dict['ENCOUNTER'][0]['SOURCE_PATIENT_ID'].unique())
+#print(df_dict['ENCOUNTER'][0].groupby("SOURCE_PATIENT_ID")["SOURCE_PATIENT_ID"].count()) #titanic["Pclass"].value_counts() same
+#print(df_dict['ENCOUNTER'][0].count())
 # start on the calculation bit next then refactor
 # the calculation of the descriptive stats can be done with python or sql... will mostlikely go with python and iterating through each df will be easier that way
-for k, v in table_col_dict.items():
-    print(df_dict[k][0][v[0]])
+#for k, v in table_col_dict.items():
+#    print(df_dict[k][0][v[0]])
 
 
 #key value pairs... (table, column), chose tuple so it's not mutable
@@ -156,19 +160,23 @@ for k, v in table_col_dict.items():
 # add mean, mode, std i.e. variance... to this and the summary/descriptive calculations will be done. 
 # after summary stats done... need to flag when out of spec... Not just the comparison between raw and transformed... which is already completed by profiler... 
 # but this flag will be displayed that it is under or over predefined limits.
+table_names = tables_schema(schema)
+
+df_dict, table_col_dict = rename_columns(table_names)
+
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
 for pair in pairs:
-    print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
+    #print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().mean()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEDIAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().median()}''')
     print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Deviation == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().std()}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Max Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().max()}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Min Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().min()}''')
+    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Max Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().max()}''')
+    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Min Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().min()}''')
 
 
 #by table
