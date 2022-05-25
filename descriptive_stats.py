@@ -100,7 +100,7 @@ def rename_columns(table_names):
     for k in table_names:
         df_sql = f'''select * from {k} '''
         all_sql_list.append(df_sql)   
-    print(all_sql_list)
+    #print(all_sql_list)
     df_list =[]   
 
     for sql in all_sql_list:
@@ -113,7 +113,7 @@ def rename_columns(table_names):
     df_dict = {}
     for k, v in zip(table_names, df_list):
         df_dict.setdefault(k, []).append(v)
-    print(df_dict)
+    #print(df_dict)
 
     return df_dict, table_col_dict
 
@@ -175,6 +175,7 @@ df_max =pd.DataFrame
 
 file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/group_by_count.csv'
 list_stat_df =[]
+list_count_df =[]
 # create a list for each dataframe type... append the DF's with normalized column names and concat the list of DF's into ONE DF per type. These will be the DF's exported to SF.
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
@@ -198,7 +199,7 @@ for pair in pairs:
     df_ljoin = df.merge(df1,on='Unique Item',how='left',indicator=True)
     df_new = df_ljoin[['Schema_x','Table_x','Column_x','Unique Item','Groupby Count','Groupby Count Percentage','_merge']]
     df_new.columns =['Schema','Table','Column','Unique Item','Groupby Count','Groupby Count Percentage','Validation']
-
+    list_count_df.append(df_new)
     #print(df_new)
 
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
@@ -220,7 +221,8 @@ for pair in pairs:
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Max Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().max()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Min Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().min()}''')
 mean_df = pd.concat(list_stat_df)
-print(mean_df)
+count_df =pd.concat(list_count_df)
+print(count_df)
 #.reset_index(name='Count')
 #by table
 #for table in table_names:
