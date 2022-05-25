@@ -164,7 +164,7 @@ def rename_columns(table_names):
 table_names = tables_schema(schema)
 
 df_dict, table_col_dict = rename_columns(table_names)
-
+df =pd.DataFrame
 file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/group_by_count.csv'
 list_stat_df =[]
 
@@ -173,9 +173,15 @@ pairs = [   (key, value)
             for value in values[0] ]
 for pair in pairs:
     #print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
-    print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
-    list_stat_df.append(pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'Count'))) #list of groupby count dfs
-    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100}''')
+    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
+    #list_stat_df.append(pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'Count'))) #list of groupby count dfs
+    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))}''')
+    df = pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))
+    df.insert(0,'Schema',schema,True)
+    df.insert(1,'Table',pair[0],True)
+    df.insert(2,'Column',pair[1],True)
+    df.columns =['Schema','Table','Column','Unique Item','Groupby Count Percentage']
+    print(df)
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().mean()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEDIAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().median()}''')
@@ -183,7 +189,7 @@ for pair in pairs:
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Max Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().max()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Min Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().min()}''')
 
-
+#.reset_index(name='Count')
 #by table
 #for table in table_names:
 #    print(f'''Describing Table {table}  == {df_dict[table][0].astype('object').describe()}''')
@@ -200,9 +206,10 @@ for pair in pairs:
 #  df_dict[pair[0]][0][pair[1]].astype('int').describe()     
 
 #to output properly add schema, table then normaize the columns counts might need to pivot after creation... create tables in snowflake
-pd.concat(list_stat_df).to_csv(file_name) 
+#pd.concat(list_stat_df).to_csv(file_name) 
 
-
+#for i in list_stat_df:
+#    print(i)
 
 
 #count is the count of objects in the column --- does not include null
