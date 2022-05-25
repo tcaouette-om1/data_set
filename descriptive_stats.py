@@ -165,30 +165,62 @@ table_names = tables_schema(schema)
 
 df_dict, table_col_dict = rename_columns(table_names)
 df =pd.DataFrame
+df1 =pd.DataFrame
+df_quant =pd.DataFrame
+df_mean=pd.DataFrame
+df_median =pd.DataFrame
+df_std =pd.DataFrame
+df_min =pd.DataFrame
+df_max =pd.DataFrame
+
 file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/group_by_count.csv'
 list_stat_df =[]
-
+# create a list for each dataframe type... append the DF's with normalized column names and concat the list of DF's into ONE DF per type. These will be the DF's exported to SF.
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
 for pair in pairs:
     #print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
-    #list_stat_df.append(pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'Count'))) #list of groupby count dfs
+    df1 = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'Groupby Count')) #list of groupby count dfs
+    df1.insert(0,'Schema',schema,True)
+    df1.insert(1,'Table',pair[0],True)
+    df1.insert(2,'Column',pair[1],True)
+    df1.columns =['Schema','Table','Column','Unique Item','Groupby Count']
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))}''')
     df = pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))
     df.insert(0,'Schema',schema,True)
     df.insert(1,'Table',pair[0],True)
     df.insert(2,'Column',pair[1],True)
+    #df.insert(4,'Groupby Count',df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count(),True) GOING TO ADD GROUP BY COUNTS IN THE DATAFRAME... Create DF then merge into percentage
     df.columns =['Schema','Table','Column','Unique Item','Groupby Count Percentage']
-    print(df)
+    #print(df)
+    df_ljoin = df.merge(df1,on='Unique Item',how='left',indicator=True)
+    df_new = df_ljoin[['Schema_x','Table_x','Column_x','Unique Item','Groupby Count','Groupby Count Percentage','_merge']]
+    df_new.columns =['Schema','Table','Column','Unique Item','Groupby Count','Groupby Count Percentage','Validation']
+
+    #print(df_new)
+
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
+    df_quant =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95]).reset_index(name='Group By Quantiles'))
+    df_quant.insert(0,'Schema',schema,True)
+    df_quant.insert(1,'Table',pair[0],True)
+    df_quant.insert(2,'Column',pair[1],True)
+    df_quant.columns=['Schema','Table','Column','Quantile_50_75_95','Count Group By Quantile Values']
+    #print(df_quant)
+    df_mean = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).mean().to_frame().reset_index()
+    
+    df_mean.insert(0,'Schema',schema,True)
+    df_mean.insert(1,'Table',pair[0],True)
+    df_mean.columns =['Schema','Table','Column','Groupby Count Mean']
+    list_stat_df.append(df_mean)
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().mean()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEDIAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().median()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Deviation == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().std()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Max Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().max()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Min Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().min()}''')
-
+mean_df = pd.concat(list_stat_df)
+print(mean_df)
 #.reset_index(name='Count')
 #by table
 #for table in table_names:
