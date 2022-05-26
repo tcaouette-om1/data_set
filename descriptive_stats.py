@@ -177,6 +177,7 @@ file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_te
 list_stat_df =[]
 list_count_df =[]
 list_quant_df =[]
+list_median_df =[]
 # create a list for each dataframe type... append the DF's with normalized column names and concat the list of DF's into ONE DF per type. These will be the DF's exported to SF.
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
@@ -231,12 +232,23 @@ for pair in pairs:
     df_mean.columns =['Schema','Table','Column','Groupby Count Mean']
     list_stat_df.append(df_mean)
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().mean()}''')
-    
+
 #MEDIAN is NEXT
 
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEDIAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().median()}''')
-
-
+    df_median = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).median().to_frame().reset_index()
+    df_median.insert(0,'Schema',schema,True)
+    df_median.insert(1,'Table',pair[0],True)
+    df_median.columns =['Schema','Table','Column','Groupby Count']
+    df_median['Groupby Count']=df_median['Groupby Count'].fillna(0).astype(np.int64)
+    df1['Groupby Count']=df1['Groupby Count'].fillna(0).astype(np.int64)
+    df_median_join = df_median.merge(df1, on=['Table','Column','Groupby Count'],how='left', indicator=True)
+    df_median_join.drop_duplicates('Groupby Count',keep='first',inplace=True)
+    df_new_median=df_median_join[['Schema_x','Table','Column','Unique Item','Groupby Count','_merge']]
+    df_new_median.columns=['Schema','Table','Column','Unique Value','Median Groupby Count','Validation']
+    #print(df_new_median)
+    list_median_df.append(df_new_median)
+    #print(df_median)
 
 
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Deviation == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().std()}''')
@@ -245,7 +257,9 @@ for pair in pairs:
 mean_df = pd.concat(list_stat_df)
 count_df =pd.concat(list_count_df)
 quant_df =pd.concat(list_quant_df)
-print(quant_df)
+median_df =pd.concat(list_median_df)
+print(median_df)
+#print(quant_df)
 #print(quant_df)
 #.reset_index(name='Count')
 #by table
