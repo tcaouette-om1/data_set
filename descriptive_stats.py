@@ -176,6 +176,7 @@ df_max =pd.DataFrame
 file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/group_by_count.csv'
 list_stat_df =[]
 list_count_df =[]
+list_quant_df =[]
 # create a list for each dataframe type... append the DF's with normalized column names and concat the list of DF's into ONE DF per type. These will be the DF's exported to SF.
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
@@ -204,11 +205,25 @@ for pair in pairs:
 
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
     df_quant =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95]).reset_index(name='Group By Quantiles'))
+    df_news = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95]))
+    #print(df_news)
     df_quant.insert(0,'Schema',schema,True)
     df_quant.insert(1,'Table',pair[0],True)
     df_quant.insert(2,'Column',pair[1],True)
-    df_quant.columns=['Schema','Table','Column','Quantile_50_75_95','Count Group By Quantile Values']
+    df_quant.columns=['Schema','Table','Column','Quantile_50_75_95','Groupby Count']
+    df_quant['Groupby Count']=df_quant['Groupby Count'].fillna(0).astype(np.int64)
+    df1['Groupby Count']=df1['Groupby Count'].fillna(0).astype(np.int64)
+    #list_quant_df.append(df_quant)
     #print(df_quant)
+    df_quant_join = df_quant.merge(df1, on=['Table','Column','Groupby Count'],how='left', indicator=True)
+    df_quant_join.drop_duplicates('Quantile_50_75_95',keep='first',inplace=True)
+    df_new_quant=df_quant_join[['Schema_x','Table','Column','Unique Item','Groupby Count','Quantile_50_75_95','_merge']]
+    df_new_quant.columns=['Schema','Table','Column','Unique Value','Groupby Count','Quantile_50_75_95','Validation']
+    list_quant_df.append(df_new_quant)
+
+
+
+
     df_mean = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).mean().to_frame().reset_index()
     
     df_mean.insert(0,'Schema',schema,True)
@@ -216,13 +231,22 @@ for pair in pairs:
     df_mean.columns =['Schema','Table','Column','Groupby Count Mean']
     list_stat_df.append(df_mean)
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().mean()}''')
+    
+#MEDIAN is NEXT
+
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEDIAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().median()}''')
+
+
+
+
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Deviation == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().std()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Max Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().max()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Min Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().min()}''')
 mean_df = pd.concat(list_stat_df)
 count_df =pd.concat(list_count_df)
-print(count_df)
+quant_df =pd.concat(list_quant_df)
+print(quant_df)
+#print(quant_df)
 #.reset_index(name='Count')
 #by table
 #for table in table_names:
