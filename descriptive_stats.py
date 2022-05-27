@@ -178,6 +178,8 @@ list_stat_df =[]
 list_count_df =[]
 list_quant_df =[]
 list_median_df =[]
+list_std_df =[]
+list_min_max_df =[]
 # create a list for each dataframe type... append the DF's with normalized column names and concat the list of DF's into ONE DF per type. These will be the DF's exported to SF.
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
@@ -250,7 +252,18 @@ for pair in pairs:
     list_median_df.append(df_new_median)
     #print(df_median)
 
-
+    df_std =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).std().reset_index(name='STD')
+    df_std.insert(0,'Schema',schema,True)
+    df_std.insert(1,'Table',pair[0],True)
+    df_std.columns=['Schema','Table','Column','STD Groupby Count']
+    list_std_df.append(df_std)
+    df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='count')).agg({'count': ['mean','std','min', 'max']}).T
+    df_min_max.insert(0,'Schema',schema,True)
+    df_min_max.insert(1,'Table',pair[0],True)
+    df_min_max.insert(2,'Column',pair[1],True)
+    df_min_max.columns=['Schema','Table','Column','MEAN','STD','MIN','MAX'] # min add the min value, max add the max value ---categorical values here... merge on count, unique value where x=min y=max
+    list_min_max_df.append(df_min_max)
+    #print(df_min_max)
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Deviation == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().std()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Max Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().max()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Min Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().min()}''')
@@ -258,7 +271,10 @@ mean_df = pd.concat(list_stat_df)
 count_df =pd.concat(list_count_df)
 quant_df =pd.concat(list_quant_df)
 median_df =pd.concat(list_median_df)
-print(median_df)
+std_df =pd.concat(list_std_df)
+min_max_mean_std=pd.concat(list_min_max_df)
+print(min_max_mean_std)
+#print(std_df)
 #print(quant_df)
 #print(quant_df)
 #.reset_index(name='Count')
