@@ -181,6 +181,7 @@ list_median_df =[]
 list_std_df =[]
 list_min_max_df =[]
 perc =[.20, .40, .60, .80]
+include =['object', 'float', 'int']
 def q1(x):
     return x.quantile(0.25)
 
@@ -275,12 +276,24 @@ for pair in pairs:
     df_std.columns=['Schema','Table','Column','STD Groupby Count']
     list_std_df.append(df_std)
     #df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='Value')).agg({'count': ['mean','std','min', 'max']}).T
-    df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='Value'))#.agg({'Value': ['describe']}) #.reset_index(name='count')
+    df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='Value'))#.describe()#.agg({'Value': ['describe']}) #.reset_index(name='count')
+    df_min_max.columns =['Unique Value','Groupby Count']
     df_min_max.insert(0,'Schema',schema,True)
     df_min_max.insert(1,'Table',pair[0],True)
-    #df_min_max.reset_index(name='count')
+    df_min_max.insert(2,'Column',pair[1],True)
+    df_allofem=pd.DataFrame(df_min_max.describe(percentiles = perc, include = include))
+    df_allofem.insert(0,'Schema',schema,True)
+    df_allofem.insert(1,'Table',pair[0],True)
+    df_allofem.insert(2,'Column',pair[1],True)
+    df_allofem.reset_index(inplace=True)
+    df_allofem.rename(columns={'index':'Info'},inplace=True)
+    df_info =df_allofem.pop('Info')
+    df_allofem.insert(3,'Info',df_info)
+    #df_allofem=df_allofem[['Schema1','Table1','Column1','Info','Unique Value','Groupby Count']]
+    #print(df_allofem)
+    list_min_max_df.append(df_allofem)
     #df_min_max.columns=['Schema','Table','Column','Count']
-    print(df_min_max)
+    #print(df_min_max)
     #df_min_max.insert(0,'Schema',schema,True)
     #df_min_max.insert(1,'Table',pair[0],True)
     #df_min_max.insert(2,'Column',pair[1],True)
@@ -296,8 +309,8 @@ count_df =pd.concat(list_count_df)
 quant_df =pd.concat(list_quant_df)
 median_df =pd.concat(list_median_df)
 std_df =pd.concat(list_std_df)
-#min_max_mean_std=pd.concat(list_min_max_df)
-#print(min_max_mean_std)
+min_max_mean_std=pd.concat(list_min_max_df)
+print(min_max_mean_std)
 #print(std_df)
 #print(quant_df)
 #print(quant_df)
