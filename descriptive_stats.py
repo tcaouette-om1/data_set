@@ -180,6 +180,23 @@ list_quant_df =[]
 list_median_df =[]
 list_std_df =[]
 list_min_max_df =[]
+perc =[.20, .40, .60, .80]
+def q1(x):
+    return x.quantile(0.25)
+
+def q2(x):
+    return x.median()
+
+def q3(x):
+    return x.quantile(0.95)
+
+
+def percentile(n):
+    def percentile_(x):
+        return np.percentile(x, n)
+    percentile_.__name__ = 'percentile_%s' % n
+    return percentile_
+
 # create a list for each dataframe type... append the DF's with normalized column names and concat the list of DF's into ONE DF per type. These will be the DF's exported to SF.
 pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
@@ -257,12 +274,19 @@ for pair in pairs:
     df_std.insert(1,'Table',pair[0],True)
     df_std.columns=['Schema','Table','Column','STD Groupby Count']
     list_std_df.append(df_std)
-    df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='count')).agg({'count': ['mean','std','min', 'max']}).T
+    #df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='Value')).agg({'count': ['mean','std','min', 'max']}).T
+    df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='Value'))#.agg({'Value': ['describe']}) #.reset_index(name='count')
     df_min_max.insert(0,'Schema',schema,True)
     df_min_max.insert(1,'Table',pair[0],True)
-    df_min_max.insert(2,'Column',pair[1],True)
-    df_min_max.columns=['Schema','Table','Column','MEAN','STD','MIN','MAX'] # min add the min value, max add the max value ---categorical values here... merge on count, unique value where x=min y=max
-    list_min_max_df.append(df_min_max)
+    #df_min_max.reset_index(name='count')
+    #df_min_max.columns=['Schema','Table','Column','Count']
+    print(df_min_max)
+    #df_min_max.insert(0,'Schema',schema,True)
+    #df_min_max.insert(1,'Table',pair[0],True)
+    #df_min_max.insert(2,'Column',pair[1],True)
+    #print(df_min_max)
+    #df_min_max.columns=['Schema','Table','Column','Count','Mean','STD','MIN','Q1_25','Q2_50','Q3_75','MAX'] # min add the min value, max add the max value ---categorical values here... merge on count, unique value where x=min y=max
+    #list_min_max_df.append(df_min_max)
     #print(df_min_max)
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Deviation == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().std()}''')
     #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Max Value == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().max()}''')
@@ -272,8 +296,8 @@ count_df =pd.concat(list_count_df)
 quant_df =pd.concat(list_quant_df)
 median_df =pd.concat(list_median_df)
 std_df =pd.concat(list_std_df)
-min_max_mean_std=pd.concat(list_min_max_df)
-print(min_max_mean_std)
+#min_max_mean_std=pd.concat(list_min_max_df)
+#print(min_max_mean_std)
 #print(std_df)
 #print(quant_df)
 #print(quant_df)
