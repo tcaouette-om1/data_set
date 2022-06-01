@@ -10,9 +10,11 @@ import random
 import string
 import decimal
 import hashlib
-import sqlalchemy
+from sqlalchemy import create_engine
 import time
 import matplotlib
+from snowflake.connector.pandas_tools import write_pandas
+from snowflake.connector.pandas_tools import pd_writer
 
 role = 'ngr_exact_sciences'
 database = 'ngr_exact_sciences'
@@ -121,13 +123,6 @@ def rename_columns(table_names):
 
     #df_all_list.append(fetch_pandas_old(cs_id,select_all))
 
-
-
-
-
-
-
-
 #select the 
 #for i in table_names:
 ##    df_dict[i]
@@ -180,6 +175,8 @@ list_quant_df =[]
 list_median_df =[]
 list_std_df =[]
 list_min_max_df =[]
+list_min =[]
+list_max =[]
 perc =[.20, .40, .60, .80]
 include =['object', 'float', 'int']
 def q1(x):
@@ -317,7 +314,8 @@ for pair in pairs:
     df_new_max =df_max.merge(df1, how='inner',left_on='MAX', right_on='Groupby Count')
     df_max_context = df_new_max[['Schema_x','Table_x','Column_x','Unique Item','MAX']]
     df_max_context.columns =['Schema','Table','Column','Item Max','MAX']
-    print(df_max_context)
+    list_max.append(df_max_context)
+    #print(df_max_context)
 
     df_min =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).min().reset_index(name='MIN')
     df_min.insert(0,'Schema',schema,True)
@@ -329,23 +327,149 @@ for pair in pairs:
     df_new_min =df_min.merge(df1, how='inner',left_on='MIN', right_on='Groupby Count')
     df_min_context = df_new_min[['Schema_x','Table_x','Column_x','Unique Item','MIN']]
     df_min_context.columns =['Schema','Table','Column','Item Min','MIN']
+    list_min.append(df_min_context)
+    
+    df_diff = pd.concat([df_max_context,df_min_context]).drop_duplicates(keep=False)
+    #print(df_diff)
+
     #print(df_min_context)
 mean_df = pd.concat(list_stat_df)
 count_df =pd.concat(list_count_df)
 quant_df =pd.concat(list_quant_df)
 median_df =pd.concat(list_median_df)
 std_df =pd.concat(list_std_df)
-#min_max_mean_std=pd.concat(list_min_max_df)
+min_df =pd.concat(list_min)
+max_df =pd.concat(list_max)
+max_df['Item Max'] = max_df['Item Max'].astype('str')
+print(max_df.dtypes)
+
+max_df.to_csv(file_name, sep='\t', encoding='utf-8')
+# need to change dtypes per column
+##sql_use_schema = "USE SCHEMA PUBLIC"
+#cs_id.execute(sql_use_schema)
+#sql_create_table =f"""CREATE or TABLE MAX_VALUES (
+
+
+
+#)
+##"""
+#write_pandas(ctx_id, max_df, "max_values")
+
+def get_col_types(df):
+    
+    '''
+        Helper function to create/modify Snowflake tables; gets the column and dtype pair for each item in the dataframe
+
+        
+        args:
+            df: dataframe to evaluate
+            
+    '''
+        
+    import numpy as np
+    
+    # get dtypes and convert to df
+    ct = df.dtypes.reset_index().rename(columns={0:'col'})
+    ct = ct.apply(lambda x: x.astype(str).str.upper()) # case matching as snowflake needs it in uppers
+        
+    # only considers objects at this point
+    # only considers objects and ints at this point
+    ct['col'] = np.where(ct['col']=='OBJECT', 'VARCHAR', ct['col'])
+    ct['col'] = np.where(ct['col'].str.contains('DATE'), 'DATETIME', ct['col'])
+    ct['col'] = np.where(ct['col'].str.contains('INT'), 'NUMERIC', ct['col'])
+    ct['col'] = np.where(ct['col'].str.contains('FLOAT'), 'FLOAT', ct['col'])
+    
+    # get the column dtype pair
+    l = []
+    for index, row in ct.iterrows():
+        l.append(row['index'] + ' ' + row['col'])
+    
+    string = ', '.join(l) # convert from list to a string object
+    
+    string = string.strip()
+    
+    return string
+
+def create_table(table, action, col_type, df, cur):
+    
+    '''
+        Function to create/replace and append to tables in Snowflake
+        
+        args:
+            table: name of the table to create/modify
+            action: whether do the initial create/replace or appending; key to control logic
+            col_type: string with column name associated dtype, each pair separated by a comma; comes from get_col_types() func
+            df: dataframe to load
+            
+        dependencies: function get_col_types(); helper function to get the col and dtypes to create a table
+    '''
+   
+    if action=='create_replace':
+    
+        # set up execute
+        sql=""" CREATE OR REPLACE TABLE """ + table.upper() +"""("""+ col_type + """)"""
+             
+        print(sql)
+        cur.execute(sql) 
+        time.sleep(5)
+        #prep to ensure proper case
+        df.columns = [col.upper() for col in df.columns]
+
+        # write df to table
+        write_pandas(ctx_id_new, df, table.upper())
+        
+    #elif action=='append':
+        
+        # convert to a string list of tuples
+    #    df = str(list(df.itertuples(index=False, name=None)))
+        # get rid of the list elements so it is a string tuple list
+    #    df = df.replace('[','').replace(']','')
+        
+        # set up execute
+    #    cur.execute(
+    #        """ INSERT INTO """ + table + """
+    #            VALUES """ + df + """
+
+    #        """)  
+  
+
+            # create df
+role = 'ngr_exact_sciences'
+database = 'ngr_exact_sciences'
+schema ='public'
+ctx_id_new = snowflake.connector.connect(
+    user = 'tcaouette',
+    account = "om1id",
+    authenticator = 'externalbrowser',
+    role = role,
+    database = database,
+    schema = schema,
+    warehouse = 'LOAD_WH',
+    autocommit = False
+    )
+
+cs_id_new = ctx_id_new.cursor()
+
+col_type = get_col_types(max_df)
+print(col_type)
+table_name = f'QA_max_values_schema_{schema}'
+create_table(table_name, 'create_replace', col_type, max_df, cs_id_new)
+
+#min_ma
+# maxx_mean_std=pd.concat(list_min_max_df)
 #print(min_max_mean_std)
 #print(std_df)
 #print(quant_df)
 #print(quant_df)
 #.reset_index(name='Count')
 #by table
+#list_table=[]
 #for table in table_names:
-#    print(f'''Describing Table {table}  == {df_dict[table][0].astype('object').describe()}''')
+#    list_table.append(pd.DataFrame(df_dict[table][0].astype('object').describe()))
+    #print(f'''Describing Table {table}  == {df_dict[table][0].astype('object').describe()}''')
 
-
+#table_df =pd.concat(list_table)
+#print(table_df)
 #------comaprative raw and transformed-- run stats---- df_raw minus df_tansformed 
 #----- visulaize the counts------
 #------next suite will be the implausible values ------
