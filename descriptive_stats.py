@@ -15,6 +15,7 @@ import time
 import matplotlib
 from snowflake.connector.pandas_tools import write_pandas
 from snowflake.connector.pandas_tools import pd_writer
+from snowflake.sqlalchemy import URL
 
 role = 'ngr_exact_sciences'
 database = 'ngr_exact_sciences'
@@ -356,6 +357,11 @@ max_df.to_csv(file_name, sep='\t', encoding='utf-8')
 #)
 ##"""
 #write_pandas(ctx_id, max_df, "max_values")
+cs_id.close()
+
+
+
+
 role = 'ngr_exact_sciences'
 database = 'ngr_exact_sciences'
 schema ='public'
@@ -451,20 +457,47 @@ def create_table(table, action, col_type, df, cur):
   
 
             # create df
+engine = create_engine(URL(
+    account = 'om1id',
+    user = 'tcaouette',
+    authenticator = 'externalbrowser',
+    database = database,
+    schema = schema,
+    role=role,
+    warehouse = 'LOAD_WH',
+    autocommit = False
+))
 
-
-col_type = get_col_types(max_df)
-print(col_type)
 table_name = f'QA_max_values_schema_{schema}'
+if_exists = 'replace'
+
+with engine.connect() as con:
+        max_df.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)#, method=pd_writer)
+
+#col_type = get_col_types(max_df)
+#print(col_type)
+
+
 #create_table(table_name, 'create_replace', col_type, max_df, cs_id_new)
 
-max_df.columns = [col.upper() for col in max_df.columns]
-print(max_df.columns)
-success,nchunks,nrows,_ = write_pandas(ctx_id_new, max_df, table_name.upper())
-print(len(max_df))
-print(str(success)+','+str(nchunks)+','+str(nrows))
+#max_df.columns = [col.upper() for col in max_df.columns]
+##print(max_df.columns)
+#success,nchunks,nrows,_ = write_pandas(ctx_id_new, max_df, table_name.upper())
+##print(len(max_df))
+#print(str(success)+','+str(nchunks)+','+str(nrows))
+
+
+
+query = f'select * from {database}.{schema}.{table_name}'
+print(query)
+max = new_query(query,cs_id_new)
+print(max)
 ctx_id_new.close()
 print(f'CHECK {table_name} in {database}.{schema} ')
+
+
+
+
 #min_ma
 # maxx_mean_std=pd.concat(list_min_max_df)
 #print(min_max_mean_std)
