@@ -360,6 +360,7 @@ def build_big_df(df_dict,table_col_dict):
     # need to change dtypes per column
 
     cs_id.close()
+    print(mean_df)
     return [mean_df, count_df, quant_df, median_df, std_df]   
 
 
@@ -395,43 +396,27 @@ def get_col_types(df):
         
     import numpy as np
         # Get dtypes and convert to df
-    df_col_types = df.dtypes.reset_index()
-    df_col_types = df_col_types.rename(columns={'index': 'col_name', 0:'dtype'})
-    df_col_types = df_col_types.apply(lambda x: x.astype(str).str.upper()) # Case matching as snowflake needs it in uppers
-        
-    # Create the mapping from Dataframe types to Snowflake data types
-    df_col_types['dtype'] = np.where(df_col_types['dtype']=='OBJECT', 'VARCHAR', df_col_types['dtype'])
-    df_col_types['dtype'] = np.where(df_col_types['dtype'].str.contains('DATE'), 'DATETIME', df_col_types['dtype'])
-    df_col_types['dtype'] = np.where(df_col_types['dtype'].str.contains('INT'), 'NUMERIC', df_col_types['dtype'])
-    df_col_types['dtype'] = np.where(df_col_types['dtype'].str.contains('FLOAT'), 'FLOAT', df_col_types['dtype'])
-    df_col_types['dtype'] = np.where(df_col_types['dtype'].str.contains('CATEGORY'), 'VARCHAR', df_col_types['dtype'])
-    
-    # Get the column dtype pairs
-    df_col_types['dtype_pairs'] = df_col_types.apply(lambda row: row['col_name'] + " " + row['dtype'], axis = 1)
-    col_type_pair_str = ' '.join(df_col_types['dtype_pairs'])
 
-    return col_type_pair_str
-    # # get dtypes and convert to df
-    # ct = df.dtypes.reset_index().rename(columns={0:'col'})
-    # ct = ct.apply(lambda x: x.astype(str).str.upper()) # case matching as snowflake needs it in uppers
+    ct = df.dtypes.reset_index().rename(columns={0:'col'})
+    ct = ct.apply(lambda x: x.astype(str).str.upper()) # case matching as snowflake needs it in uppers
         
-    # # only considers objects at this point
-    # # only considers objects and ints at this point
-    # ct['col'] = np.where(ct['col']=='OBJECT', 'VARCHAR', ct['col'])
-    # ct['col'] = np.where(ct['col'].str.contains('DATE'), 'DATETIME', ct['col'])
-    # ct['col'] = np.where(ct['col'].str.contains('INT'), 'NUMERIC', ct['col'])
-    # ct['col'] = np.where(ct['col'].str.contains('FLOAT'), 'FLOAT', ct['col'])
+    # only considers objects at this point
+    # only considers objects and ints at this point
+    ct['col'] = np.where(ct['col']=='OBJECT', 'VARCHAR', ct['col'])
+    ct['col'] = np.where(ct['col'].str.contains('DATE'), 'DATETIME', ct['col'])
+    ct['col'] = np.where(ct['col'].str.contains('INT'), 'NUMERIC', ct['col'])
+    ct['col'] = np.where(ct['col'].str.contains('FLOAT'), 'FLOAT', ct['col'])
+    ct['col'] = np.where(ct['col'].str.contains('CATEGORY'), 'VARCHAR', ct['col'])
+    # get the column dtype pair
+    l = []
+    for index, row in ct.iterrows():
+        l.append(row['index'] + ' ' + row['col'])
     
-    # # get the column dtype pair
-    # l = []
-    # for index, row in ct.iterrows():
-    #     l.append(row['index'] + ' ' + row['col'])
+    string = ', '.join(l) # convert from list to a string object
     
-    # string = ', '.join(l) # convert from list to a string object
+    string = string.strip()
     
-    # string = string.strip()
-    
-    # return string
+    return string
 
 def create_table(table, action, col_type, df, cur):
     
@@ -495,7 +480,7 @@ def send_df_snow(user,database,role,df_list):
 
     with engine.connect() as con:
         columnlist=[]
-        for i in df_list: #this call back is causing the issue... data, frames are aleady built, so it's failing here
+        for i in df_list: #this call back is causing the issue... data, frames are aleady built, so it's failing here FIX THIS
             columnlist.append(i.columns.to_list())
             for x in columnlist:
                 for k in x:
@@ -579,6 +564,8 @@ def main():
 
     #build_big_df(df_dict,table_col_dict)
     df_list = build_big_df(df_dict,table_col_dict)
+    for i in df_list:
+        print(i.columns.to_list())
 
     print('DATAFRAMES BUILT')
     # create df
@@ -588,7 +575,7 @@ def main():
 
 
 
-    send_df_snow(user,database,role,df_list)
+    #send_df_snow(user,database,role,df_list)
     print('CHECK DATABASE---FINISHED PROCESSING')
    
 if __name__ == "__main__":
