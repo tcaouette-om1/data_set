@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+from matplotlib.pyplot import get
+from pyparsing import col
 import snowflake.connector
 import pandas as pd
 import numpy as np
@@ -40,7 +42,7 @@ from snowflake.sqlalchemy import URL
 
 role = 'ngr_exact_sciences'
 database = 'ngr_exact_sciences'
-schema ='UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
+schema1 ='UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
 user ='tcaouette'
 ctx_id = snowflake.connector.connect(
     user = user,
@@ -48,7 +50,7 @@ ctx_id = snowflake.connector.connect(
     authenticator = 'externalbrowser',
     role = role,
     database = database,
-    schema = schema,
+    schema = schema1,
     warehouse = 'LOAD_WH',
     autocommit = False
     )
@@ -176,9 +178,9 @@ def rename_columns(table_names):
 # add mean, mode, std i.e. variance... to this and the summary/descriptive calculations will be done. 
 # after summary stats done... need to flag when out of spec... Not just the comparison between raw and transformed... which is already completed by profiler... 
 # but this flag will be displayed that it is under or over predefined limits.
-table_names = tables_schema(schema)
+#table_names = tables_schema(schema)
 
-df_dict, table_col_dict = rename_columns(table_names)
+#df_dict, table_col_dict = rename_columns(table_names)
 
 df =pd.DataFrame
 df1 =pd.DataFrame
@@ -228,13 +230,14 @@ def build_big_df(df_dict,table_col_dict):
 
         #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
 
-        df1 = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'Groupby_Count')) #list of groupby count dfs
+        df1 = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'GroupbyCount')) #list of groupby count dfs
+        #print(df1)
         df1.insert(0,'Schema_column',schema,True)
         df1.insert(1,'Table_column',pair[0],True)
         df1.insert(2,'Column_column',pair[1],True)
         df1.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count']
         #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))}''')
-        df = pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))
+        df = pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='GroupbyCountPercentage'))
         df.insert(0,'Schema_column',schema,True)
         df.insert(1,'Table_column',pair[0],True)
         df.insert(2,'Column_column',pair[1],True)
@@ -248,7 +251,7 @@ def build_big_df(df_dict,table_col_dict):
         #print(df_new)
 
         #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
-        df_quant =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95]).reset_index(name='Group_By_Quantiles'))
+        df_quant =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95]).reset_index(name='GroupByQuantiles'))
         df_news = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95]))
         #print(df_news)
         df_quant.insert(0,'Schema_column',schema,True)
@@ -391,28 +394,44 @@ def get_col_types(df):
     '''
         
     import numpy as np
-    
-    # get dtypes and convert to df
-    ct = df.dtypes.reset_index().rename(columns={0:'col'})
-    ct = ct.apply(lambda x: x.astype(str).str.upper()) # case matching as snowflake needs it in uppers
+        # Get dtypes and convert to df
+    df_col_types = df.dtypes.reset_index()
+    df_col_types = df_col_types.rename(columns={'index': 'col_name', 0:'dtype'})
+    df_col_types = df_col_types.apply(lambda x: x.astype(str).str.upper()) # Case matching as snowflake needs it in uppers
         
-    # only considers objects at this point
-    # only considers objects and ints at this point
-    ct['col'] = np.where(ct['col']=='OBJECT', 'VARCHAR', ct['col'])
-    ct['col'] = np.where(ct['col'].str.contains('DATE'), 'DATETIME', ct['col'])
-    ct['col'] = np.where(ct['col'].str.contains('INT'), 'NUMERIC', ct['col'])
-    ct['col'] = np.where(ct['col'].str.contains('FLOAT'), 'FLOAT', ct['col'])
+    # Create the mapping from Dataframe types to Snowflake data types
+    df_col_types['dtype'] = np.where(df_col_types['dtype']=='OBJECT', 'VARCHAR', df_col_types['dtype'])
+    df_col_types['dtype'] = np.where(df_col_types['dtype'].str.contains('DATE'), 'DATETIME', df_col_types['dtype'])
+    df_col_types['dtype'] = np.where(df_col_types['dtype'].str.contains('INT'), 'NUMERIC', df_col_types['dtype'])
+    df_col_types['dtype'] = np.where(df_col_types['dtype'].str.contains('FLOAT'), 'FLOAT', df_col_types['dtype'])
+    df_col_types['dtype'] = np.where(df_col_types['dtype'].str.contains('CATEGORY'), 'VARCHAR', df_col_types['dtype'])
     
-    # get the column dtype pair
-    l = []
-    for index, row in ct.iterrows():
-        l.append(row['index'] + ' ' + row['col'])
+    # Get the column dtype pairs
+    df_col_types['dtype_pairs'] = df_col_types.apply(lambda row: row['col_name'] + " " + row['dtype'], axis = 1)
+    col_type_pair_str = ' '.join(df_col_types['dtype_pairs'])
+
+    return col_type_pair_str
+    # # get dtypes and convert to df
+    # ct = df.dtypes.reset_index().rename(columns={0:'col'})
+    # ct = ct.apply(lambda x: x.astype(str).str.upper()) # case matching as snowflake needs it in uppers
+        
+    # # only considers objects at this point
+    # # only considers objects and ints at this point
+    # ct['col'] = np.where(ct['col']=='OBJECT', 'VARCHAR', ct['col'])
+    # ct['col'] = np.where(ct['col'].str.contains('DATE'), 'DATETIME', ct['col'])
+    # ct['col'] = np.where(ct['col'].str.contains('INT'), 'NUMERIC', ct['col'])
+    # ct['col'] = np.where(ct['col'].str.contains('FLOAT'), 'FLOAT', ct['col'])
     
-    string = ', '.join(l) # convert from list to a string object
+    # # get the column dtype pair
+    # l = []
+    # for index, row in ct.iterrows():
+    #     l.append(row['index'] + ' ' + row['col'])
     
-    string = string.strip()
+    # string = ', '.join(l) # convert from list to a string object
     
-    return string
+    # string = string.strip()
+    
+    # return string
 
 def create_table(table, action, col_type, df, cur):
     
@@ -456,26 +475,67 @@ def create_table(table, action, col_type, df, cur):
 
     #        """)  
 # new function call here for just output  
-#build_big_df[0] = mean_df, build_big_df[1] = count_df, build_big_df[2]=quant_df, build_big_df[3]=median_df, build_big_df[4]=std_df   
-for i in build_big_df(df_dict,table_col_dict):
-    print(i)
-# def send_df_snow(user,database,schema,role):
+#build_big_df[0] = mean_df, build_big_df[1] = count_df, build_big_df[2]=quant_df, build_big_df[3]=median_df, build_big_df[4]=std_df
+
+
+def send_df_snow(user,database,role,df_list):
     
-#     engine = create_engine(URL(
-#     account = 'om1id',
-#     user = user,
-#     authenticator = 'externalbrowser',
-#     database = database,
-#     schema = schema,
-#     role=role,
-#     warehouse = 'LOAD_WH',
-#     autocommit = False
-#     ))
-#     with engine.connect() as con:
-#         for i in build_big_df():
-#             table_name = f'QA_mean_values_schema_{schema}'
-#             if_exists = 'replace'
-#             i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+    engine = create_engine(URL(
+    account = 'om1id',
+    user = user,
+    authenticator = 'externalbrowser',
+    database = database,
+    schema = 'public',
+    role=role,
+    warehouse = 'LOAD_WH',
+    autocommit = False
+    ))
+    
+    if_exists = 'replace'
+
+    with engine.connect() as con:
+        columnlist=[]
+        for i in df_list: #this call back is causing the issue... data, frames are aleady built, so it's failing here
+            columnlist.append(i.columns.to_list())
+            for x in columnlist:
+                for k in x:
+                    if 'STD' in k:
+                        table_name = f'QA_std_values_{schema1}'
+                        print(table_name)      
+                        col_type = get_col_types(i)
+                        create_table(table_name, 'create_replace', col_type, i,cs_id_new)
+                        i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+                    if 'Mean' in k:
+                        table_name = f'QA_mean_values_{schema1}'
+                        print(table_name)      
+                        col_type = get_col_types(i)
+                        create_table(table_name, 'create_replace', col_type, i,cs_id_new)
+                        i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+                    if 'Percentage' in k:
+                        table_name = f'QA_count_percent_values_{schema1}'
+                        print(table_name)      
+                        col_type = get_col_types(i)
+                        create_table(table_name, 'create_replace', col_type, i,cs_id_new)
+                        i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+                    if 'Quantile' in k:
+                        table_name = f'QA_quantile_values_{schema1}'
+                        print(table_name)      
+                        col_type = get_col_types(i)
+                        create_table(table_name, 'create_replace', col_type, i,cs_id_new)
+                        i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)   
+                    if 'Median' in k:
+                        table_name = f'QA_count_median_values_{schema1}'  
+                        print(table_name)      
+                        col_type = get_col_types(i)
+                        create_table(table_name, 'create_replace', col_type, i,cs_id_new)
+                        i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+
+            # query = f'select * from {database}.{schema}.{table_name}'
+            # print(query)
+            # max = new_query(query,cs_id_new)
+            # #print(max)
+            # #ctx_id_new.close()
+            print(f'CHECK QA TABLES in {database}.{schema} ')
 
     
         
@@ -513,14 +573,26 @@ for i in build_big_df(df_dict,table_col_dict):
 #freq is the number of time the top appears in column
 
 
-# def main():
-#     table_names = tables_schema(schema)
-#     df_dict, table_col_dict = rename_columns(table_names)
-#     build_big_df(df_dict,table_col_dict)
+def main():
+    table_names = tables_schema(schema)
+    df_dict, table_col_dict = rename_columns(table_names)
 
+    #build_big_df(df_dict,table_col_dict)
+    df_list = build_big_df(df_dict,table_col_dict)
+
+    print('DATAFRAMES BUILT')
+    # create df
+    # now that the table is created, append to it
+
+    #append_table('table_test', 'append', None, df2)
+
+
+
+    send_df_snow(user,database,role,df_list)
+    print('CHECK DATABASE---FINISHED PROCESSING')
    
-# if __name__ == "__main__":
-#   main()
+if __name__ == "__main__":
+  main()
 
 
 
