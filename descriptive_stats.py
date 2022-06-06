@@ -17,11 +17,33 @@ from snowflake.connector.pandas_tools import write_pandas
 from snowflake.connector.pandas_tools import pd_writer
 from snowflake.sqlalchemy import URL
 
+
+#add in target role, database, schema terminal entry
+
+#perfect place for a class connection:
+#   class Connection:
+#       def __init__(self):
+#           self.role
+#           self.database
+#           self.schema
+#       def connect_me(self):
+            # ctx_id = snowflake.connector.connect(
+            #     user = 'tcaouette',
+            #     account = "om1id",
+            #     authenticator = 'externalbrowser',
+            #     role = role,
+            #     database = database,
+            #     schema = schema,
+            #     warehouse = 'LOAD_WH',
+            #     autocommit = False
+            # )
+
 role = 'ngr_exact_sciences'
 database = 'ngr_exact_sciences'
 schema ='UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
+user ='tcaouette'
 ctx_id = snowflake.connector.connect(
-    user = 'tcaouette',
+    user = user,
     account = "om1id",
     authenticator = 'externalbrowser',
     role = role,
@@ -94,9 +116,6 @@ def rename_columns(table_names):
     for k, v in zip(table_names, list_columns):
         table_col_dict.setdefault(k, []).append(v)
     #to access column headers for each df i=table_name [0] accesses the column value list which will be used to apply the new df headers
-    ##for i in table_names:
-            #    print(table_col_dict[i][0])
-
     #test run will be limit of 10 rows per dataframe
     # new dfs add limit 10 for testing
     all_sql_list =[]
@@ -160,6 +179,7 @@ def rename_columns(table_names):
 table_names = tables_schema(schema)
 
 df_dict, table_col_dict = rename_columns(table_names)
+
 df =pd.DataFrame
 df1 =pd.DataFrame
 df_quant =pd.DataFrame
@@ -196,168 +216,148 @@ def percentile(n):
     percentile_.__name__ = 'percentile_%s' % n
     return percentile_
 
+
+
 # create a list for each dataframe type... append the DF's with normalized column names and concat the list of DF's into ONE DF per type. These will be the DF's exported to SF.
-pairs = [   (key, value) 
+def build_big_df(df_dict,table_col_dict):
+    pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
-for pair in pairs:
+    for pair in pairs:
     #print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
-    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
-    df1 = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'Groupby_Count')) #list of groupby count dfs
-    df1.insert(0,'Schema_column',schema,True)
-    df1.insert(1,'Table_column',pair[0],True)
-    df1.insert(2,'Column_column',pair[1],True)
-    df1.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count']
-    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))}''')
-    df = pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))
-    df.insert(0,'Schema_column',schema,True)
-    df.insert(1,'Table_column',pair[0],True)
-    df.insert(2,'Column_column',pair[1],True)
-    #df.insert(4,'Groupby Count',df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count(),True) GOING TO ADD GROUP BY COUNTS IN THE DATAFRAME... Create DF then merge into percentage
-    df.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count_Percentage']
-    #print(df)
-    df_ljoin = df.merge(df1,on='Unique_Item',how='left',indicator=True)
-    df_new = df_ljoin[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','Groupby_Count','Groupby_Count_Percentage','_merge']]
-    df_new.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count','Groupby_Count_Percentage','Validation']
-    list_count_df.append(df_new)
-    #print(df_new)
 
-    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
-    df_quant =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95]).reset_index(name='Group_By_Quantiles'))
-    df_news = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95]))
-    #print(df_news)
-    df_quant.insert(0,'Schema_column',schema,True)
-    df_quant.insert(1,'Table_column',pair[0],True)
-    df_quant.insert(2,'Column_column',pair[1],True)
-    df_quant.columns=['Schema_column','Table_column','Column_column','Quantile_50_75_95','Groupby_Count']
-    df_quant['Groupby_Count']=df_quant['Groupby_Count'].fillna(0).astype(np.int64)
-    df1['Groupby_Count']=df1['Groupby_Count'].fillna(0).astype(np.int64)
-    #list_quant_df.append(df_quant)
-    #print(df_quant)
-    df_quant_join = df_quant.merge(df1, on=['Table_column','Column_column','Groupby_Count'],how='left', indicator=True)
-    df_quant_join.drop_duplicates('Quantile_50_75_95',keep='first',inplace=True)
-    df_new_quant=df_quant_join[['Schema_column_x','Table_column','Column_column','Unique_Item','Groupby_Count','Quantile_50_75_95','_merge']]
-    df_new_quant.columns=['Schema_column','Table_column','Column_column','Unique_Value','Groupby_Count','Quantile_50_75_95','Validation']
-    list_quant_df.append(df_new_quant)
+        #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
+
+        df1 = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'Groupby_Count')) #list of groupby count dfs
+        df1.insert(0,'Schema_column',schema,True)
+        df1.insert(1,'Table_column',pair[0],True)
+        df1.insert(2,'Column_column',pair[1],True)
+        df1.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count']
+        #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))}''')
+        df = pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))
+        df.insert(0,'Schema_column',schema,True)
+        df.insert(1,'Table_column',pair[0],True)
+        df.insert(2,'Column_column',pair[1],True)
+        #df.insert(4,'Groupby Count',df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count(),True) GOING TO ADD GROUP BY COUNTS IN THE DATAFRAME... Create DF then merge into percentage
+        df.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count_Percentage']
+        #print(df)
+        df_ljoin = df.merge(df1,on='Unique_Item',how='left',indicator=True)
+        df_new = df_ljoin[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','Groupby_Count','Groupby_Count_Percentage','_merge']]
+        df_new.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count','Groupby_Count_Percentage','Validation']
+        list_count_df.append(df_new)
+        #print(df_new)
+
+        #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
+        df_quant =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95]).reset_index(name='Group_By_Quantiles'))
+        df_news = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95]))
+        #print(df_news)
+        df_quant.insert(0,'Schema_column',schema,True)
+        df_quant.insert(1,'Table_column',pair[0],True)
+        df_quant.insert(2,'Column_column',pair[1],True)
+        df_quant.columns=['Schema_column','Table_column','Column_column','Quantile_50_75_95','Groupby_Count']
+        df_quant['Groupby_Count']=df_quant['Groupby_Count'].fillna(0).astype(np.int64)
+        df1['Groupby_Count']=df1['Groupby_Count'].fillna(0).astype(np.int64)
+        #list_quant_df.append(df_quant)
+        #print(df_quant)
+        df_quant_join = df_quant.merge(df1, on=['Table_column','Column_column','Groupby_Count'],how='left', indicator=True)
+        df_quant_join.drop_duplicates('Quantile_50_75_95',keep='first',inplace=True)
+        df_new_quant=df_quant_join[['Schema_column_x','Table_column','Column_column','Unique_Item','Groupby_Count','Quantile_50_75_95','_merge']]
+        df_new_quant.columns=['Schema_column','Table_column','Column_column','Unique_Value','Groupby_Count','Quantile_50_75_95','Validation']
+        list_quant_df.append(df_new_quant)
 
 
-
-
-    df_mean = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).mean().to_frame().reset_index()
+        df_mean = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).mean().to_frame().reset_index()
     
-    df_mean.insert(0,'Schema_column',schema,True)
-    df_mean.insert(1,'Table_column',pair[0],True)
-    df_mean.columns =['Schema_column','Table_column','Column_column','Groupby_Count_Mean']
-    list_stat_df.append(df_mean)
-    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().mean()}''')
+        df_mean.insert(0,'Schema_column',schema,True)
+        df_mean.insert(1,'Table_column',pair[0],True)
+        df_mean.columns =['Schema_column','Table_column','Column_column','Groupby_Count_Mean']
+        list_stat_df.append(df_mean)
+        #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().mean()}''')
 
-#MEDIAN is NEXT
+        #MEDIAN is NEXT
 
-    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEDIAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().median()}''')
-    df_median = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).median().to_frame().reset_index()
-    df_median.insert(0,'Schema_column',schema,True)
-    df_median.insert(1,'Table_column',pair[0],True)
-    df_median.columns =['Schema_column','Table_column','Column_column','Groupby_Count']
-    df_median['Groupby_Count']=df_median['Groupby_Count'].fillna(0).astype(np.int64)
-    df1['Groupby_Count']=df1['Groupby_Count'].fillna(0).astype(np.int64)
-    df_median_join = df_median.merge(df1, on=['Table_column','Column_column','Groupby_Count'],how='left', indicator=True)
-    df_median_join.drop_duplicates('Groupby_Count',keep='first',inplace=True)
-    df_new_median=df_median_join[['Schema_column_x','Table_column','Column_column','Unique_Item','Groupby_Count','_merge']]
-    df_new_median.columns=['Schema_column','Table_column','Column_column','Unique_Value','Median_Groupby_Count','Validation']
-    #print(df_new_median)
-    list_median_df.append(df_new_median)
-    #print(df_median)
+        #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column MEDIAN == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().median()}''')
+        df_median = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).median().to_frame().reset_index()
+        df_median.insert(0,'Schema_column',schema,True)
+        df_median.insert(1,'Table_column',pair[0],True)
+        df_median.columns =['Schema_column','Table_column','Column_column','Groupby_Count']
+        df_median['Groupby_Count']=df_median['Groupby_Count'].fillna(0).astype(np.int64)
+        df1['Groupby_Count']=df1['Groupby_Count'].fillna(0).astype(np.int64)
+        df_median_join = df_median.merge(df1, on=['Table_column','Column_column','Groupby_Count'],how='left', indicator=True)
+        df_median_join.drop_duplicates('Groupby_Count',keep='first',inplace=True)
+        df_new_median=df_median_join[['Schema_column_x','Table_column','Column_column','Unique_Item','Groupby_Count','_merge']]
+        df_new_median.columns=['Schema_column','Table_column','Column_column','Unique_Value','Median_Groupby_Count','Validation']
+        #print(df_new_median)
+        list_median_df.append(df_new_median)
+        #print(df_median)
 
-    df_std =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).std().reset_index(name='STD')
-    df_std.insert(0,'Schema_column',schema,True)
-    df_std.insert(1,'Table_column',pair[0],True)
-    df_std.columns=['Schema_column','Table_column','Column_column','STD_Groupby_Count']
-    list_std_df.append(df_std)
-    #df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='Value')).agg({'count': ['mean','std','min', 'max']}).T
-    df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='Value'))#.describe()#.agg({'Value': ['describe']}) #.reset_index(name='count')
-    df_min_max.columns =['Unique_Value','Groupby_Count']
-    #print(df_min_max)
-    # this needs the min and max unique categorical values
-    if len(df_min_max)>0:
+        df_std =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).std().reset_index(name='STD')
+        df_std.insert(0,'Schema_column',schema,True)
+        df_std.insert(1,'Table_column',pair[0],True)
+        df_std.columns=['Schema_column','Table_column','Column_column','STD_Groupby_Count']
+        list_std_df.append(df_std)
+        #df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='Value')).agg({'count': ['mean','std','min', 'max']}).T
+        df_min_max=pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name='Value'))#.describe()#.agg({'Value': ['describe']}) #.reset_index(name='count')
+        df_min_max.columns =['Unique_Value','Groupby_Count']
+        #print(df_min_max)
+        # this needs the min and max unique categorical values
+        if len(df_min_max)>0:
 
-    #df_min_max.insert(0,'Schema',schema,True)
-    #df_min_max.insert(1,'Table',pair[0],True)
-    #df_min_max.insert(0,'Column',pair[1],True)
-        df_allofem=pd.DataFrame(df_min_max.describe(percentiles = perc, include = 'all',datetime_is_numeric=True)) #include
-        df_allofem.insert(0,'Schema_column',schema,True)
-        df_allofem.insert(1,'Table_column',pair[0],True)
-        df_allofem.insert(2,'Column_column',pair[1],True)
-        df_allofem.reset_index(inplace=True)
-        df_allofem.rename(columns={'index':'Info'},inplace=True)
-        df_info =df_allofem.pop('Info')
-        df_allofem.insert(3,'Info',df_info)
-        #print(df_allofem)
-        list_min_max_df.append(df_allofem)
-    #if len(df_allofem.columns) < 8:
-    #print(df_allofem)
-    #df_allofem=df_allofem[['Schema1','Table1','Column1','Info','Unique Value','Groupby Count']]
-    #print(df_allofem)
-    #
-    #df_min_max.columns=['Schema','Table','Column','Count']
-    #print(df_min_max)
-    #df_min_max.insert(0,'Schema',schema,True)
-    #df_min_max.insert(1,'Table',pair[0],True)
-    #df_min_max.insert(2,'Column',pair[1],True)
-    #print(df_min_max)
-    #df_min_max.columns=['Schema','Table','Column','Count','Mean','STD','MIN','Q1_25','Q2_50','Q3_75','MAX'] # min add the min value, max add the max value ---categorical values here... merge on count, unique value where x=min y=max
-    #list_min_max_df.append(df_min_max)
-    #print(df_min_max)
-    #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Standard Deviation == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().std()}''')
-    df_max =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).max().reset_index(name='MAX_column')
-    df_max.insert(0,'Schema_column',schema,True)
-    df_max.insert(1,'Table_column',pair[0],True)
-    df_max.insert(2,'Column_column',pair[1],True)
-    df_new_max =df_max.merge(df1, how='inner',left_on='MAX_column', right_on='Groupby_Count')
-    df_max_context = df_new_max[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','MAX_column']]
-    df_max_context.columns =['Schema_column','Table_column','Column_column','Item_Max','MAX_column']
-    list_max.append(df_max_context)
-    #print(df_max_context)
 
-    df_min =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).min().reset_index(name='MIN_column')
-    df_min.insert(0,'Schema_column',schema,True)
-    df_min.insert(1,'Table_column',pair[0],True)
-    df_min.insert(2,'Column_column',pair[1],True)
-    df_mm_join = df_max.merge(df_min, on=['Schema_column','Table_column','Column_column'],how='left',indicator=True)
-    df_new_mm=df_mm_join[['Schema_column','Table_column','Column_column','MAX_column','MIN_column','_merge']]
-    #print(df_new_mm)
-    df_new_min =df_min.merge(df1, how='inner',left_on='MIN_column', right_on='Groupby_Count')
-    df_min_context = df_new_min[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','MIN_column']]
-    df_min_context.columns =['Schema_column','Table_column','Columnv','Item_Min','MIN_column']
-    list_min.append(df_min_context)
+            df_allofem=pd.DataFrame(df_min_max.describe(percentiles = perc, include = 'all',datetime_is_numeric=True)) #include
+            df_allofem.insert(0,'Schema_column',schema,True)
+            df_allofem.insert(1,'Table_column',pair[0],True)
+            df_allofem.insert(2,'Column_column',pair[1],True)
+            df_allofem.reset_index(inplace=True)
+            df_allofem.rename(columns={'index':'Info'},inplace=True)
+            df_info =df_allofem.pop('Info')
+            df_allofem.insert(3,'Info',df_info)
+            #print(df_allofem)
+            list_min_max_df.append(df_allofem)
+
+        df_max =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).max().reset_index(name='MAX_column')
+        df_max.insert(0,'Schema_column',schema,True)
+        df_max.insert(1,'Table_column',pair[0],True)
+        df_max.insert(2,'Column_column',pair[1],True)
+        df_new_max =df_max.merge(df1, how='inner',left_on='MAX_column', right_on='Groupby_Count')
+        df_max_context = df_new_max[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','MAX_column']]
+        df_max_context.columns =['Schema_column','Table_column','Column_column','Item_Max','MAX_column']
+        list_max.append(df_max_context)
+        #print(df_max_context)
+
+        df_min =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).min().reset_index(name='MIN_column')
+        df_min.insert(0,'Schema_column',schema,True)
+        df_min.insert(1,'Table_column',pair[0],True)
+        df_min.insert(2,'Column_column',pair[1],True)
+        df_mm_join = df_max.merge(df_min, on=['Schema_column','Table_column','Column_column'],how='left',indicator=True)
+        df_new_mm=df_mm_join[['Schema_column','Table_column','Column_column','MAX_column','MIN_column','_merge']]
+        #print(df_new_mm)
+        df_new_min =df_min.merge(df1, how='inner',left_on='MIN_column', right_on='Groupby_Count')
+        df_min_context = df_new_min[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','MIN_column']]
+        df_min_context.columns =['Schema_column','Table_column','Columnv','Item_Min','MIN_column']
+        list_min.append(df_min_context)
     
-    df_diff = pd.concat([df_max_context,df_min_context]).drop_duplicates(keep=False)
-    #print(df_diff)
+        df_diff = pd.concat([df_max_context,df_min_context]).drop_duplicates(keep=False)
+        #print(df_diff)
 
-    #print(df_min_context)
-mean_df = pd.concat(list_stat_df)
-count_df =pd.concat(list_count_df)
-quant_df =pd.concat(list_quant_df)
-median_df =pd.concat(list_median_df)
-std_df =pd.concat(list_std_df)
-min_df =pd.concat(list_min)
-max_df =pd.concat(list_max)
-max_df['Item_Max'] = max_df['Item_Max'].astype('str')
-print(max_df.dtypes)
-max_df.columns=max_df.columns.str.upper()
-print(max_df)
+        #print(df_min_context)
+    mean_df = pd.concat(list_stat_df)
+    count_df =pd.concat(list_count_df)
+    quant_df =pd.concat(list_quant_df)
+    median_df =pd.concat(list_median_df)
+    std_df =pd.concat(list_std_df)
+    min_df =pd.concat(list_min)
+    max_df =pd.concat(list_max)
+    max_df['Item_Max'] = max_df['Item_Max'].astype('str')
+    #print(max_df.dtypes)
+    max_df.columns=max_df.columns.str.upper()
+    #print(max_df)
 
-max_df.to_csv(file_name, sep='\t', encoding='utf-8')
-# need to change dtypes per column
-##sql_use_schema = "USE SCHEMA PUBLIC"
-#cs_id.execute(sql_use_schema)
-#sql_create_table =f"""CREATE or TABLE MAX_VALUES (
+    #max_df.to_csv(file_name, sep='\t', encoding='utf-8')
+    # need to change dtypes per column
 
-
-
-#)
-##"""
-#write_pandas(ctx_id, max_df, "max_values")
-cs_id.close()
+    cs_id.close()
+    return [mean_df, count_df, quant_df, median_df, std_df]   
 
 
 
@@ -365,8 +365,9 @@ cs_id.close()
 role = 'ngr_exact_sciences'
 database = 'ngr_exact_sciences'
 schema ='public'
+user='tcaouette'
 ctx_id_new = snowflake.connector.connect(
-    user = 'tcaouette',
+    user = user,
     account = "om1id",
     authenticator = 'externalbrowser',
     role = role,
@@ -439,7 +440,7 @@ def create_table(table, action, col_type, df, cur):
         df.columns = [col.upper() for col in df.columns]
 
         # write df to table
-        write_pandas(ctx_id_new, df, table.upper())
+        #write_pandas(ctx_id_new, df, table.upper())
         
     #elif action=='append':
         
@@ -454,58 +455,45 @@ def create_table(table, action, col_type, df, cur):
     #            VALUES """ + df + """
 
     #        """)  
-  
+# new function call here for just output  
+#build_big_df[0] = mean_df, build_big_df[1] = count_df, build_big_df[2]=quant_df, build_big_df[3]=median_df, build_big_df[4]=std_df   
+for i in build_big_df(df_dict,table_col_dict):
+    print(i)
+# def send_df_snow(user,database,schema,role):
+    
+#     engine = create_engine(URL(
+#     account = 'om1id',
+#     user = user,
+#     authenticator = 'externalbrowser',
+#     database = database,
+#     schema = schema,
+#     role=role,
+#     warehouse = 'LOAD_WH',
+#     autocommit = False
+#     ))
+#     with engine.connect() as con:
+#         for i in build_big_df():
+#             table_name = f'QA_mean_values_schema_{schema}'
+#             if_exists = 'replace'
+#             i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
 
-            # create df
-engine = create_engine(URL(
-    account = 'om1id',
-    user = 'tcaouette',
-    authenticator = 'externalbrowser',
-    database = database,
-    schema = schema,
-    role=role,
-    warehouse = 'LOAD_WH',
-    autocommit = False
-))
-
-table_name = f'QA_max_values_schema_{schema}'
-if_exists = 'replace'
-
-with engine.connect() as con:
-        max_df.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)#, method=pd_writer)
-
-#col_type = get_col_types(max_df)
-#print(col_type)
-
-
-#create_table(table_name, 'create_replace', col_type, max_df, cs_id_new)
-
-#max_df.columns = [col.upper() for col in max_df.columns]
-##print(max_df.columns)
-#success,nchunks,nrows,_ = write_pandas(ctx_id_new, max_df, table_name.upper())
-##print(len(max_df))
-#print(str(success)+','+str(nchunks)+','+str(nrows))
-
-
-
-query = f'select * from {database}.{schema}.{table_name}'
-print(query)
-max = new_query(query,cs_id_new)
-print(max)
-ctx_id_new.close()
-print(f'CHECK {table_name} in {database}.{schema} ')
+    
+        
 
 
 
 
-#min_ma
-# maxx_mean_std=pd.concat(list_min_max_df)
-#print(min_max_mean_std)
-#print(std_df)
-#print(quant_df)
-#print(quant_df)
-#.reset_index(name='Count')
-#by table
+
+#query = f'select * from {database}.{schema}.{table_name}'
+#print(query)
+##max = new_query(query,cs_id_new)
+#print(max)
+#ctx_id_new.close()
+#print(f'CHECK {table_name} in {database}.{schema} ')
+
+
+
+# table output function create
 #list_table=[]
 #for table in table_names:
 #    list_table.append(pd.DataFrame(df_dict[table][0].astype('object').describe()))
@@ -514,20 +502,9 @@ print(f'CHECK {table_name} in {database}.{schema} ')
 #table_df =pd.concat(list_table)
 #print(table_df)
 #------comaprative raw and transformed-- run stats---- df_raw minus df_tansformed 
-#----- visulaize the counts------
-#------next suite will be the implausible values ------
+#----- visulaize the counts ------
+#------ next suite will be the implausible values ------
 
-#for dfs in list_stat_df:
-#    print(dfs)
-#add if statements --- when column i.e. pair[1] name is like age df_dict[pair[0]][0][pair[1]].astype('int').describe() ---something like this might do the trick
-#if 'AGE' in pair[1]:   
-#  df_dict[pair[0]][0][pair[1]].astype('int').describe()     
-
-#to output properly add schema, table then normaize the columns counts might need to pivot after creation... create tables in snowflake
-#pd.concat(list_stat_df).to_csv(file_name) 
-
-#for i in list_stat_df:
-#    print(i)
 
 
 #count is the count of objects in the column --- does not include null
@@ -536,11 +513,16 @@ print(f'CHECK {table_name} in {database}.{schema} ')
 #freq is the number of time the top appears in column
 
 
+# def main():
+#     table_names = tables_schema(schema)
+#     df_dict, table_col_dict = rename_columns(table_names)
+#     build_big_df(df_dict,table_col_dict)
+
+   
+# if __name__ == "__main__":
+#   main()
 
 
-#pair[0] = table name, pair[1] = column name
-# create function to loop through all tables and all columns... apply summary/descriptive stats ____ 
-# the stats will have to be exported somewhere... CSV for now... database better for tableau hookup... or pyscript.
 
-#print(df_dict['PATIENT'][0].astype('object').describe())
+
 
