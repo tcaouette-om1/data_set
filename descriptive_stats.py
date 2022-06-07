@@ -244,10 +244,13 @@ def build_big_df(df_dict,table_col_dict):
         #df.insert(4,'Groupby Count',df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count(),True) GOING TO ADD GROUP BY COUNTS IN THE DATAFRAME... Create DF then merge into percentage
         df.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count_Percentage']
         #print(df)
+
+        #both_list=['both']
         df_ljoin = df.merge(df1,on='Unique_Item',how='left',indicator=True)
         df_new = df_ljoin[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','Groupby_Count','Groupby_Count_Percentage','_merge']]
         df_new.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count','Groupby_Count_Percentage','Validation']
-        list_count_df.append(df_new)
+        #df_new[df_new['Validation'].isin(both_list)] #only allowing for both
+        list_count_df.append(df1)#df_new
         #print(df_new)
 
         #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
@@ -346,8 +349,11 @@ def build_big_df(df_dict,table_col_dict):
         #print(df_min_context)
     mean_df = pd.concat(list_stat_df)
     count_df =pd.concat(list_count_df)
+    count_df['Unique_Item'] =count_df['Unique_Item'].apply(str)
     quant_df =pd.concat(list_quant_df)
     median_df =pd.concat(list_median_df)
+    median_df['Unique_Value'] =median_df['Unique_Value'].apply(str)
+    median_df['Median_Groupby_Count'] =median_df['Median_Groupby_Count'].apply(str)
     std_df =pd.concat(list_std_df)
     min_df =pd.concat(list_min)
     max_df =pd.concat(list_max)
@@ -355,13 +361,14 @@ def build_big_df(df_dict,table_col_dict):
     #print(max_df.dtypes)
     max_df.columns=max_df.columns.str.upper()
     #print(max_df)
-
-    #max_df.to_csv(file_name, sep='\t', encoding='utf-8')
+    file_s ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/percents.csv'
+    count_df.to_csv(file_s, sep='\t', encoding='utf-8') # investigate percent
     # need to change dtypes per column
 
     cs_id.close()
-    print(mean_df)
-    return [mean_df, count_df, quant_df, median_df, std_df]   
+    print('ALL DFs BUILT')
+    #quant_df is huge leaving out for testing purposes.
+    return [mean_df, count_df,  median_df, std_df]   
 
 
 
@@ -396,16 +403,16 @@ def get_col_types(df):
         
     import numpy as np
         # Get dtypes and convert to df
-
+    
     ct = df.dtypes.reset_index().rename(columns={0:'col'})
     ct = ct.apply(lambda x: x.astype(str).str.upper()) # case matching as snowflake needs it in uppers
         
     # only considers objects at this point
     # only considers objects and ints at this point
-    ct['col'] = np.where(ct['col']=='OBJECT', 'VARCHAR', ct['col'])
+    ct['col'] = np.where(ct['col']=='OBJECT', 'NCHAR', ct['col'])#VARCHAR
     ct['col'] = np.where(ct['col'].str.contains('DATE'), 'DATETIME', ct['col'])
-    ct['col'] = np.where(ct['col'].str.contains('INT'), 'NUMERIC', ct['col'])
-    ct['col'] = np.where(ct['col'].str.contains('FLOAT'), 'FLOAT', ct['col'])
+    ct['col'] = np.where(ct['col'].str.contains('INT'), 'VARCHAR', ct['col']) #NUMERIC
+    ct['col'] = np.where(ct['col'].str.contains('FLOAT'), 'VARCHAR', ct['col']) #FLOAT
     ct['col'] = np.where(ct['col'].str.contains('CATEGORY'), 'VARCHAR', ct['col'])
     # get the column dtype pair
     l = []
@@ -473,54 +480,98 @@ def send_df_snow(user,database,role,df_list):
     schema = 'public',
     role=role,
     warehouse = 'LOAD_WH',
-    autocommit = False
+    autocommit = False,
+    encoding="utf8"
     ))
     
     if_exists = 'replace'
-
+    columnlist=[]
+    table_name_list=[]
+    for i in df_list: #this call back is causing the issue... data, frames are aleady built, so it's failing here FIX THIS
+        columnlist.append(i.columns.to_list())
+    print(columnlist)
+    table_name_list = [f'QA_mean_values_{schema1}',f'QA_count_percent_values_{schema1}',f'QA_count_median_values_{schema1}',f'QA_std_values_{schema1}']
+    print(table_name_list)
+    # for x in columnlist:
+    #     print(x)
+    #     if 'Mean' in x:
+    #         table_name_list.append(f'QA_mean_values_{schema1}')
+    #     if 'Percentage' in x:
+    #         table_name_list.append(f'QA_count_percent_values_{schema1}')
+    #             #if 'Quantile' in k:
+    #             #    table_name_list.append(f'QA_quantile_values_{schema1}')
+    #     if 'Median' in x:
+    #         table_name_list.append(f'QA_count_median_values_{schema1}')
+    #     if 'STD' in x:
+    #         table_name_list.append(f'QA_std_values_{schema1}')
+    # #print(table_name_list)
+    #for i in df_list:
+    #    for x in table_name_list:
+    #        print(i.columns.to_list())
+     #       print(x)
+    #add datetime stamp to run -------> this needs to be done
+    #this is out of order
+    list_dict = {}
+    for k, v in zip(table_name_list,df_list):
+        list_dict.setdefault(k, []).append(v) #extend
+    for k,v in list_dict.items():
+        print(v[0].dtypes)
+    #print(list_dict)
     with engine.connect() as con:
-        columnlist=[]
-        for i in df_list: #this call back is causing the issue... data, frames are aleady built, so it's failing here FIX THIS
-            columnlist.append(i.columns.to_list())
-            for x in columnlist:
-                for k in x:
-                    if 'STD' in k:
-                        table_name = f'QA_std_values_{schema1}'
-                        print(table_name)      
-                        col_type = get_col_types(i)
-                        create_table(table_name, 'create_replace', col_type, i,cs_id_new)
-                        i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
-                    if 'Mean' in k:
-                        table_name = f'QA_mean_values_{schema1}'
-                        print(table_name)      
-                        col_type = get_col_types(i)
-                        create_table(table_name, 'create_replace', col_type, i,cs_id_new)
-                        i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
-                    if 'Percentage' in k:
-                        table_name = f'QA_count_percent_values_{schema1}'
-                        print(table_name)      
-                        col_type = get_col_types(i)
-                        create_table(table_name, 'create_replace', col_type, i,cs_id_new)
-                        i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
-                    if 'Quantile' in k:
-                        table_name = f'QA_quantile_values_{schema1}'
-                        print(table_name)      
-                        col_type = get_col_types(i)
-                        create_table(table_name, 'create_replace', col_type, i,cs_id_new)
-                        i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)   
-                    if 'Median' in k:
-                        table_name = f'QA_count_median_values_{schema1}'  
-                        print(table_name)      
-                        col_type = get_col_types(i)
-                        create_table(table_name, 'create_replace', col_type, i,cs_id_new)
-                        i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+        for k,v in list_dict.items():
+            print(k , v)
+            col_type = get_col_types(v[0])
+            create_table(k, 'create_replace', col_type, v[0],cs_id_new)
+            v[0].to_sql(name=k.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+            print(f'{k} Sent to {database}.{schema}')
+
+    #for i in df_list:
+    #    print(i)
+    # with engine.connect() as con:
+
+    #     for x in columnlist:
+    #         for k in x:
+    #             if 'Mean' in k:
+    #                 table_name = f'QA_mean_values_{schema1}'
+    #                 print(table_name)      
+    #                 col_type = get_col_types(i)
+    #                 create_table(table_name, 'create_replace', col_type, i,cs_id_new)
+    #                 i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+    #             if 'Percentage' in k:
+    #                 table_name = f'QA_count_percent_values_{schema1}'
+    #                 print(table_name)      
+    #                 col_type = get_col_types(i)
+    #                 create_table(table_name, 'create_replace', col_type, i,cs_id_new)
+    #                 i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+    #             if 'Quantile' in k:
+    #                 table_name = f'QA_quantile_values_{schema1}'
+    #                 print(table_name)      
+    #                 col_type = get_col_types(i)
+    #                 create_table(table_name, 'create_replace', col_type, i,cs_id_new)
+    #                 i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)   
+    #             if 'Median' in k:
+    #                 table_name = f'QA_count_median_values_{schema1}'  
+    #                 print(table_name)      
+    #                 col_type = get_col_types(i)
+    #                 create_table(table_name, 'create_replace', col_type, i,cs_id_new)
+    #                 i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+    #             if 'STD' in k:
+    #                 table_name_std = f'QA_std_values_{schema1}'
+    #                 print(table_name)      
+    #                 col_type = get_col_types(i)
+    #                 create_table(table_name_std, 'create_replace', col_type, i,cs_id_new)
+    #                 i.to_sql(name=table_name_std.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
+
+
+
+
 
             # query = f'select * from {database}.{schema}.{table_name}'
             # print(query)
             # max = new_query(query,cs_id_new)
             # #print(max)
             # #ctx_id_new.close()
-            print(f'CHECK QA TABLES in {database}.{schema} ')
+    print(f'CHECK QA TABLES in {database}.{schema} ')
 
     
         
@@ -564,8 +615,7 @@ def main():
 
     #build_big_df(df_dict,table_col_dict)
     df_list = build_big_df(df_dict,table_col_dict)
-    for i in df_list:
-        print(i.columns.to_list())
+
 
     print('DATAFRAMES BUILT')
     # create df
@@ -573,9 +623,8 @@ def main():
 
     #append_table('table_test', 'append', None, df2)
 
+    send_df_snow(user,database,role,df_list)
 
-
-    #send_df_snow(user,database,role,df_list)
     print('CHECK DATABASE---FINISHED PROCESSING')
    
 if __name__ == "__main__":
