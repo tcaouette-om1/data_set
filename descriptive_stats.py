@@ -492,23 +492,7 @@ def send_df_snow(user,database,role,df_list):
     print(columnlist)
     table_name_list = [f'QA_mean_values_{schema1}',f'QA_count_percent_values_{schema1}',f'QA_count_median_values_{schema1}',f'QA_std_values_{schema1}']
     print(table_name_list)
-    # for x in columnlist:
-    #     print(x)
-    #     if 'Mean' in x:
-    #         table_name_list.append(f'QA_mean_values_{schema1}')
-    #     if 'Percentage' in x:
-    #         table_name_list.append(f'QA_count_percent_values_{schema1}')
-    #             #if 'Quantile' in k:
-    #             #    table_name_list.append(f'QA_quantile_values_{schema1}')
-    #     if 'Median' in x:
-    #         table_name_list.append(f'QA_count_median_values_{schema1}')
-    #     if 'STD' in x:
-    #         table_name_list.append(f'QA_std_values_{schema1}')
-    # #print(table_name_list)
-    #for i in df_list:
-    #    for x in table_name_list:
-    #        print(i.columns.to_list())
-     #       print(x)
+
     #add datetime stamp to run -------> this needs to be done
     #this is out of order
     list_dict = {}
@@ -525,42 +509,7 @@ def send_df_snow(user,database,role,df_list):
             v[0].to_sql(name=k.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
             print(f'{k} Sent to {database}.{schema}')
 
-    #for i in df_list:
-    #    print(i)
-    # with engine.connect() as con:
 
-    #     for x in columnlist:
-    #         for k in x:
-    #             if 'Mean' in k:
-    #                 table_name = f'QA_mean_values_{schema1}'
-    #                 print(table_name)      
-    #                 col_type = get_col_types(i)
-    #                 create_table(table_name, 'create_replace', col_type, i,cs_id_new)
-    #                 i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
-    #             if 'Percentage' in k:
-    #                 table_name = f'QA_count_percent_values_{schema1}'
-    #                 print(table_name)      
-    #                 col_type = get_col_types(i)
-    #                 create_table(table_name, 'create_replace', col_type, i,cs_id_new)
-    #                 i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
-    #             if 'Quantile' in k:
-    #                 table_name = f'QA_quantile_values_{schema1}'
-    #                 print(table_name)      
-    #                 col_type = get_col_types(i)
-    #                 create_table(table_name, 'create_replace', col_type, i,cs_id_new)
-    #                 i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)   
-    #             if 'Median' in k:
-    #                 table_name = f'QA_count_median_values_{schema1}'  
-    #                 print(table_name)      
-    #                 col_type = get_col_types(i)
-    #                 create_table(table_name, 'create_replace', col_type, i,cs_id_new)
-    #                 i.to_sql(name=table_name.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
-    #             if 'STD' in k:
-    #                 table_name_std = f'QA_std_values_{schema1}'
-    #                 print(table_name)      
-    #                 col_type = get_col_types(i)
-    #                 create_table(table_name_std, 'create_replace', col_type, i,cs_id_new)
-    #                 i.to_sql(name=table_name_std.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
 
 
 
@@ -589,11 +538,6 @@ def send_df_snow(user,database,role,df_list):
 
 
 
-# table output function create
-#list_table=[]
-#for table in table_names:
-#    list_table.append(pd.DataFrame(df_dict[table][0].astype('object').describe()))
-    #print(f'''Describing Table {table}  == {df_dict[table][0].astype('object').describe()}''')
 
 #table_df =pd.concat(list_table)
 #print(table_df)
@@ -611,7 +555,7 @@ def send_df_snow(user,database,role,df_list):
 
 def main():
     #clean the code and add back the original percentage and quantiles... possibly min/max
-    table_names = tables_schema(schema)
+    table_names = tables_schema(schema1)
     df_dict, table_col_dict = rename_columns(table_names)
 
     #build_big_df(df_dict,table_col_dict)
