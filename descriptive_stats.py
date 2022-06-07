@@ -610,6 +610,7 @@ def send_df_snow(user,database,role,df_list):
 
 
 def main():
+    #clean the code and add back the original percentage and quantiles... possibly min/max
     table_names = tables_schema(schema)
     df_dict, table_col_dict = rename_columns(table_names)
 
