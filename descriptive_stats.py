@@ -501,7 +501,7 @@ def create_table(table, action, col_type, df, cur):
 #build_big_df[0] = mean_df, build_big_df[1] = count_df, build_big_df[2]=quant_df, build_big_df[3]=median_df, build_big_df[4]=std_df
 
 
-def send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema):
+def send_df_snow(user,database,role,df_list,schema1,ctx_id_new,schema):
     
     engine = create_engine(URL(
     account = 'om1id',
@@ -536,7 +536,7 @@ def send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema):
         for k,v in list_dict.items():
             print(k , v)
             col_type = get_col_types(v[0])
-            create_table(k, 'create_replace', col_type, v[0],cs_id_new)
+            create_table(k, 'create_replace', col_type, v[0],ctx_id_new)
             v[0].to_sql(name=k.lower(), con=con, if_exists=if_exists,index=False,chunksize=16000)
             print(f'{k} Sent to {database}.{schema}')
 
@@ -586,7 +586,7 @@ def send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema):
 
 def main():
     #clean the code and add back the original percentage and quantiles... possibly min/max
-    cs_id,ctx_id,schema1,schema,cs_id_new,ctx_id_new,user,database,role = get_terminal()
+    cs_id,ctx_id,schema1,schema,cs_id_new,ctx_id_new,user,database,role = get_terminal() #new function for terminal input. 
     table_names = tables_schema(schema1,cs_id)
     df_dict, table_col_dict = rename_columns(table_names,cs_id)
     
@@ -601,7 +601,7 @@ def main():
 
     #append_table('table_test', 'append', None, df2)
 
-    send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema)
+    send_df_snow(user,database,role,df_list,schema1,ctx_id_new,schema)
     cs_id_new.close()
 
     print('CHECK DATABASE---FINISHED PROCESSING')
