@@ -18,7 +18,10 @@ import matplotlib
 from snowflake.connector.pandas_tools import write_pandas
 from snowflake.connector.pandas_tools import pd_writer
 from snowflake.sqlalchemy import URL
-
+import getopt
+import os
+import sys
+import datetime
 
 #add in target role, database, schema terminal entry
 
@@ -39,25 +42,69 @@ from snowflake.sqlalchemy import URL
             #     warehouse = 'LOAD_WH',
             #     autocommit = False
             # )
+def get_terminal():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "u:r:d:s:x:y:w:z")
+    except getopt.GetoptError as err:
+        print (str(err))
+        #usage()
+        sys.exit(2)
+    for o, a in opts:
+        if o == "-u":
+            user = a ## user name used for authentication, e.g., alafontant
+        elif o == "-r":
+            role = a ## data access role	
+        elif o == "-d":
+            database = a ## Name of database that contains QC tables        
+        elif o == "-s":
+            schema1 = a ## Name of schema that contains the tables that are going to be analyzed 
+        elif o == "-z":
+            schema = a ## Name of public schema
+#        elif o == "-x":
+#            source_db = a ## Name of source database 
+#        elif o == "-y":
+#            account_type = a ## om1 = deid snowflake, om1id = id snowflake
+        elif o in ("-h"):
+            sys.exit()
+        else:
+            assert False, "unhandled option"
 
-role = 'ngr_exact_sciences'
-database = 'ngr_exact_sciences'
-schema1 ='UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
-user ='tcaouette'
-ctx_id = snowflake.connector.connect(
-    user = user,
-    account = "om1id",
-    authenticator = 'externalbrowser',
-    role = role,
-    database = database,
-    schema = schema1,
-    warehouse = 'LOAD_WH',
-    autocommit = False
-    )
+    role = role#'ngr_exact_sciences'
+    database = database#'ngr_exact_sciences'
+    schema1 = schema1#'UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
+    user = user #'tcaouette'
+    ctx_id = snowflake.connector.connect(
+        user = user,
+        account = "om1id",
+        authenticator = 'externalbrowser',
+        role = role,
+        database = database,
+        schema = schema1,
+        warehouse = 'LOAD_WH',
+        autocommit = False
+        )
 
-cs_id = ctx_id.cursor()
+    cs_id = ctx_id.cursor() #where the data lives that we are analyzing
 
-schema = 'UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
+
+    schema = 'public'
+    ctx_id_new = snowflake.connector.connect(
+        user = user,
+        account = "om1id",
+        authenticator = 'externalbrowser',
+        role = role,
+        database = database,
+        schema = schema,
+        warehouse = 'LOAD_WH',
+        autocommit = False
+        )
+
+    cs_id_new = ctx_id_new.cursor() #where the analysis tables go
+
+
+    return cs_id, ctx_id,schema1,cs_id_new,ctx_id_new,schema,user,database,role
+
+#    schema = 'UNIVERSITY_HOSPITALS_TRANSFORMED_mapped'
 
 #refactor... with the new function that works a lot better
 # new take on the query function--- this one works better the other one doesn't account for empty tables
@@ -77,7 +124,7 @@ def fetch_pandas_old(cur, sql):
         rows += df.shape[0]
     return df
 
-def tables_schema(schema):
+def tables_schema(schema,cs_id):
     sql_tables = f'''show tables in {schema} ''' #always ordered by table_name alphabetically
 
     df_tables = fetch_pandas_old(cs_id,sql_tables)
@@ -93,7 +140,7 @@ def tables_schema(schema):
 # query each table in list  --> create df for each table --> find the dtype of each field in the table and run a stats query on each field in table
 
 # need to create the dictionary here ---  {table_name:[columns]}   # this gets the column names to re-name each table...
-def rename_columns(table_names):
+def rename_columns(table_names,cs_id):
     table_col =['table_name',	'schema_name',	'column_name',	'data_type',	'null',	'default',	'kind',	'expression',	'comment',	'database_name',	'autoincrement']
     df_all_list =[]
     for table in table_names:
@@ -143,30 +190,14 @@ def rename_columns(table_names):
 
 
 
-    #df_all_list.append(fetch_pandas_old(cs_id,select_all))
 
-#select the 
-#for i in table_names:
-##    df_dict[i]
-#print(df_dict['ENCOUNTER'][0])
-#df_encounter = df_dict['ENCOUNTER'][0] #dataframe!
-
-#table column dictionary
-#print(table_col_dict)
 
 
 
 #accessing the dictionary df_dict['KEY'][value = 0 is the dataframe][columns in the value] 
 #dictionary form so it's easier to maintain and keep track of which dataframe is which -->faster compute too
 #will need column list dictionary built to apply the table, and columns
-#['TABLE'][list 0 index]['COLUMN'].stat or functions
-#print(df_dict['ENCOUNTER'][0]['SOURCE_PATIENT_ID'].unique())
-#print(df_dict['ENCOUNTER'][0].groupby("SOURCE_PATIENT_ID")["SOURCE_PATIENT_ID"].count()) #titanic["Pclass"].value_counts() same
-#print(df_dict['ENCOUNTER'][0].count())
-# start on the calculation bit next then refactor
-# the calculation of the descriptive stats can be done with python or sql... will mostlikely go with python and iterating through each df will be easier that way
-#for k, v in table_col_dict.items():
-#    print(df_dict[k][0][v[0]])
+
 
 
 #key value pairs... (table, column), chose tuple so it's not mutable
@@ -221,7 +252,7 @@ def percentile(n):
 
 
 # create a list for each dataframe type... append the DF's with normalized column names and concat the list of DF's into ONE DF per type. These will be the DF's exported to SF.
-def build_big_df(df_dict,table_col_dict):
+def build_big_df(df_dict,table_col_dict,schema):
     pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
@@ -365,7 +396,7 @@ def build_big_df(df_dict,table_col_dict):
     count_df.to_csv(file_s, sep='\t', encoding='utf-8') # investigate percent
     # need to change dtypes per column
 
-    cs_id.close()
+    #cs_id.close()
     print('ALL DFs BUILT')
     #quant_df is huge leaving out for testing purposes.
     return [mean_df, count_df,  median_df, std_df]   
@@ -373,22 +404,22 @@ def build_big_df(df_dict,table_col_dict):
 
 
 
-role = 'ngr_exact_sciences'
-database = 'ngr_exact_sciences'
-schema ='public'
-user='tcaouette'
-ctx_id_new = snowflake.connector.connect(
-    user = user,
-    account = "om1id",
-    authenticator = 'externalbrowser',
-    role = role,
-    database = database,
-    schema = schema,
-    warehouse = 'LOAD_WH',
-    autocommit = False
-    )
+#role = role
+#database = database
+#schema = 'public'
+#user = user
+#ctx_id_new = snowflake.connector.connect(
+#    user = user,
+#    account = "om1id",
+##    authenticator = 'externalbrowser',
+#    role = role,
+#    database = database,
+#    schema = schema,
+#    warehouse = 'LOAD_WH',
+#    autocommit = False
+#    )
 
-cs_id_new = ctx_id_new.cursor()
+#cs_id_new = ctx_id_new.cursor()
 
 def get_col_types(df):
     
@@ -470,7 +501,7 @@ def create_table(table, action, col_type, df, cur):
 #build_big_df[0] = mean_df, build_big_df[1] = count_df, build_big_df[2]=quant_df, build_big_df[3]=median_df, build_big_df[4]=std_df
 
 
-def send_df_snow(user,database,role,df_list):
+def send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema):
     
     engine = create_engine(URL(
     account = 'om1id',
@@ -555,12 +586,14 @@ def send_df_snow(user,database,role,df_list):
 
 def main():
     #clean the code and add back the original percentage and quantiles... possibly min/max
-    table_names = tables_schema(schema1)
-    df_dict, table_col_dict = rename_columns(table_names)
+    cs_id,ctx_id,schema1,schema,cs_id_new,ctx_id_new,user,database,role = get_terminal()
+    table_names = tables_schema(schema1,cs_id)
+    df_dict, table_col_dict = rename_columns(table_names,cs_id)
+    
 
     #build_big_df(df_dict,table_col_dict)
-    df_list = build_big_df(df_dict,table_col_dict)
-
+    df_list = build_big_df(df_dict,table_col_dict,schema1)
+    cs_id.close()
 
     print('DATAFRAMES BUILT')
     # create df
@@ -568,7 +601,8 @@ def main():
 
     #append_table('table_test', 'append', None, df2)
 
-    send_df_snow(user,database,role,df_list)
+    send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema)
+    cs_id_new.close()
 
     print('CHECK DATABASE---FINISHED PROCESSING')
    
