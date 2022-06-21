@@ -260,6 +260,9 @@ def build_big_df(df_dict,table_col_dict,schema):
     #print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
 
         #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
+        df_all_count = pd.DataFrame(df_dict[pair[0]][0][pair[1]])
+        df_all_count = df_all_count.count().reset_index(name='Object_Count')
+        df_all_count.columns =['Column_column','Object_Count']
 
         df1 = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'GroupbyCount')) #list of groupby count dfs
         #print(df1)
@@ -272,16 +275,20 @@ def build_big_df(df_dict,table_col_dict,schema):
         df.insert(0,'Schema_column',schema,True)
         df.insert(1,'Table_column',pair[0],True)
         df.insert(2,'Column_column',pair[1],True)
-        #df.insert(4,'Groupby Count',df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count(),True) GOING TO ADD GROUP BY COUNTS IN THE DATAFRAME... Create DF then merge into percentage
-        df.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count_Percentage']
+        #df.insert(5,'Groupby_Counts',pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'GroupbyCount')),True)
+
+        df.insert(4,'Groupby Count',df1['Groupby_Count'],True) 
+        df.insert(5,'Object_Count',df_dict[pair[0]][0][pair[1]].count(),True)#GOING TO ADD GROUP BY COUNTS IN THE DATAFRAME... Create DF then merge into percentage
+        df.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count','Object_Count','Groupby_Count_Percentage']#'Object_Count',
         #print(df)
 
+
         #both_list=['both']
-        df_ljoin = df.merge(df1,on='Unique_Item',how='left',indicator=True)
-        df_new = df_ljoin[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','Groupby_Count','Groupby_Count_Percentage','_merge']]
-        df_new.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count','Groupby_Count_Percentage','Validation']
+        ##df_ljoin = df.merge(df1,on='Unique_Item',how='left',indicator=True)
+        ##df_new = df_ljoin[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','Groupby_Count','Groupby_Count_Percentage','_merge']]
+        ##df_new.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count','Groupby_Count_Percentage','Validation']
         #df_new[df_new['Validation'].isin(both_list)] #only allowing for both
-        list_count_df.append(df1)#df_new
+        list_count_df.append(df)#df_new, df1
         #print(df_new)
 
         #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column 50%, 75% and 95% Quantile== {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().quantile([.5,.75,.95])}''')
@@ -300,7 +307,7 @@ def build_big_df(df_dict,table_col_dict,schema):
         df_quant_join.drop_duplicates('Quantile_50_75_95',keep='first',inplace=True)
         df_new_quant=df_quant_join[['Schema_column_x','Table_column','Column_column','Unique_Item','Groupby_Count','Quantile_50_75_95','_merge']]
         df_new_quant.columns=['Schema_column','Table_column','Column_column','Unique_Value','Groupby_Count','Quantile_50_75_95','Validation']
-        list_quant_df.append(df_new_quant)
+        list_quant_df.append(df_quant)
 
 
         df_mean = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).mean().to_frame().reset_index()
@@ -317,15 +324,15 @@ def build_big_df(df_dict,table_col_dict,schema):
         df_median = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).median().to_frame().reset_index()
         df_median.insert(0,'Schema_column',schema,True)
         df_median.insert(1,'Table_column',pair[0],True)
-        df_median.columns =['Schema_column','Table_column','Column_column','Groupby_Count']
-        df_median['Groupby_Count']=df_median['Groupby_Count'].fillna(0).astype(np.int64)
-        df1['Groupby_Count']=df1['Groupby_Count'].fillna(0).astype(np.int64)
-        df_median_join = df_median.merge(df1, on=['Table_column','Column_column','Groupby_Count'],how='left', indicator=True)
-        df_median_join.drop_duplicates('Groupby_Count',keep='first',inplace=True)
-        df_new_median=df_median_join[['Schema_column_x','Table_column','Column_column','Unique_Item','Groupby_Count','_merge']]
-        df_new_median.columns=['Schema_column','Table_column','Column_column','Unique_Value','Median_Groupby_Count','Validation']
+        df_median.columns =['Schema_column','Table_column','Column_column','Median_Groupby_Count']
+        df_median['Median_Groupby_Count']=df_median['Median_Groupby_Count'].fillna(0).astype(np.int64)
+        #df1['Groupby_Count']=df1['Groupby_Count'].fillna(0).astype(np.int64)
+        #df_median_join = df_median.merge(df1, on=['Table_column','Column_column','Groupby_Count'],how='left', indicator=True)
+        #df_median_join.drop_duplicates('Groupby_Count',keep='first',inplace=True)
+        #df_new_median=df_median_join[['Schema_column_x','Table_column','Column_column','Unique_Item','Groupby_Count','_merge']]
+        #df_new_median.columns=['Schema_column','Table_column','Column_column','Unique_Value','Median_Groupby_Count','Validation']
         #print(df_new_median)
-        list_median_df.append(df_new_median)
+        list_median_df.append(df_median)
         #print(df_median)
 
         df_std =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).std().reset_index(name='STD')
@@ -366,40 +373,42 @@ def build_big_df(df_dict,table_col_dict,schema):
         df_min.insert(0,'Schema_column',schema,True)
         df_min.insert(1,'Table_column',pair[0],True)
         df_min.insert(2,'Column_column',pair[1],True)
-        df_mm_join = df_max.merge(df_min, on=['Schema_column','Table_column','Column_column'],how='left',indicator=True)
-        df_new_mm=df_mm_join[['Schema_column','Table_column','Column_column','MAX_column','MIN_column','_merge']]
+        #df_mm_join = df_max.merge(df_min, on=['Schema_column','Table_column','Column_column'],how='left',indicator=True)
+        #df_new_mm=df_mm_join[['Schema_column','Table_column','Column_column','MAX_column','MIN_column','_merge']]
         #print(df_new_mm)
         df_new_min =df_min.merge(df1, how='inner',left_on='MIN_column', right_on='Groupby_Count')
         df_min_context = df_new_min[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','MIN_column']]
         df_min_context.columns =['Schema_column','Table_column','Columnv','Item_Min','MIN_column']
         list_min.append(df_min_context)
     
-        df_diff = pd.concat([df_max_context,df_min_context]).drop_duplicates(keep=False)
+        #df_diff = pd.concat([df_max_context,df_min_context]).drop_duplicates(keep=False)
         #print(df_diff)
 
         #print(df_min_context)
     mean_df = pd.concat(list_stat_df)
     count_df =pd.concat(list_count_df)
     count_df['Unique_Item'] =count_df['Unique_Item'].apply(str)
-    quant_df =pd.concat(list_quant_df)
+    ##quant_df =pd.concat(list_quant_df)
     median_df =pd.concat(list_median_df)
-    median_df['Unique_Value'] =median_df['Unique_Value'].apply(str)
+    ##median_df['Unique_Value'] =median_df['Unique_Value'].apply(str)
     median_df['Median_Groupby_Count'] =median_df['Median_Groupby_Count'].apply(str)
     std_df =pd.concat(list_std_df)
     min_df =pd.concat(list_min)
+    min_df['Item_Min'] = min_df['Item_Min'].apply(str)
     max_df =pd.concat(list_max)
     max_df['Item_Max'] = max_df['Item_Max'].astype('str')
     #print(max_df.dtypes)
-    max_df.columns=max_df.columns.str.upper()
+    ##max_df.columns=max_df.columns.str.upper()
     #print(max_df)
-    file_s ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/percents.csv'
-    count_df.to_csv(file_s, sep='\t', encoding='utf-8') # investigate percent
+    #file_s ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/percents.csv'
+    #count_df.to_csv(file_s, sep='\t', encoding='utf-8') # investigate percent
     # need to change dtypes per column
 
     #cs_id.close()
     print('ALL DFs BUILT')
+    print(count_df)
     #quant_df is huge leaving out for testing purposes.
-    return [mean_df, count_df,  median_df, std_df]   
+    return [mean_df, count_df,  median_df, std_df,  min_df, max_df]   
 
 
 
@@ -521,7 +530,7 @@ def send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema):
     for i in df_list: #this call back is causing the issue... data, frames are aleady built, so it's failing here FIX THIS
         columnlist.append(i.columns.to_list())
     print(columnlist)
-    table_name_list = [f'QA_mean_values_{schema1}',f'QA_count_percent_values_{schema1}',f'QA_count_median_values_{schema1}',f'QA_std_values_{schema1}']
+    table_name_list = [f'QA_mean_values_{schema1}',f'QA_count_percent_values_{schema1}',f'QA_count_median_values_{schema1}',f'QA_std_values_{schema1}',f'QA_min_values_{schema1}',f'QA_max_values_{schema1}']
     print(table_name_list)
 
     #add datetime stamp to run -------> this needs to be done
