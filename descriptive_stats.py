@@ -111,7 +111,7 @@ def get_terminal():
 def new_query(query,cs_id): #this one is the better one
     cs_id.execute(query)
     df = pd.DataFrame.from_records(iter(cs_id), columns=[x[0] for x in cs_id.description])
-    return df
+    return df.fillna('NULL', inplace=True)
 
 def fetch_pandas_old(cur, sql):
     cur.execute(sql)
@@ -264,14 +264,15 @@ def build_big_df(df_dict,table_col_dict,schema):
         df_all_count = df_all_count.count().reset_index(name='Object_Count')
         df_all_count.columns =['Column_column','Object_Count']
 
-        df1 = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'GroupbyCount')) #list of groupby count dfs
+        df1 = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1],dropna=False)[pair[1]].count().reset_index(name = 'GroupbyCount')) #list of groupby count dfs
         #print(df1)
         df1.insert(0,'Schema_column',schema,True)
         df1.insert(1,'Table_column',pair[0],True)
         df1.insert(2,'Column_column',pair[1],True)
         df1.columns =['Schema_column','Table_column','Column_column','Unique_Item','Groupby_Count']
         #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column Percentage == {pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='Groupby Count Percentage'))}''')
-        df = pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='GroupbyCountPercentage'))
+        df = pd.DataFrame(((df_dict[pair[0]][0].groupby(pair[1],dropna=False)[pair[1]].count()/df_dict[pair[0]][0][pair[1]].count())*100).reset_index(name='GroupbyCountPercentage'))
+        #df = pd.DataFrame(((df_dict[pair[0]][0].pair[1].value_counts(dropna=False)/df_dict[pair[0]][0][pair[1]].fillna(-1).count())*100).reset_index(name='GroupbyCountPercentage'))
         df.insert(0,'Schema_column',schema,True)
         df.insert(1,'Table_column',pair[0],True)
         df.insert(2,'Column_column',pair[1],True)
