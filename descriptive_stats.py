@@ -520,7 +520,8 @@ def create_table(table, action, col_type, df, cur):
 
 
 def send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema):
-    
+    date = datetime.datetime.now()
+    new_date = date.strftime("%Y%m%d")
     engine = create_engine(URL(
     account = 'om1id',
     user = user,
@@ -539,7 +540,7 @@ def send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema):
     for i in df_list: #this call back is causing the issue... data, frames are aleady built, so it's failing here FIX THIS
         columnlist.append(i.columns.to_list())
     print(columnlist)
-    table_name_list = [f'QA_descriptive_stats_{schema1}']
+    table_name_list = [f'QA_descriptive_stats_{schema1}_{new_date}']
     print(table_name_list)
 
     #add datetime stamp to run -------> this needs to be done
