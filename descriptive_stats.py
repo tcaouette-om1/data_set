@@ -411,12 +411,12 @@ def build_big_df(df_dict,table_col_dict,schema):
     df_count_mean = pd.merge(count_df,mean_df,left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
     df_count_median = pd.merge(df_count_mean,median_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
     df_count_std = pd.merge(df_count_median,std_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
-    df_max_std = pd.merge(df_count_std,max_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
-    df_min_std = pd.merge(df_max_std,min_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
+    #df_max_std = pd.merge(df_count_std,max_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
+   # df_min_std = pd.merge(df_max_std,min_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
 
 
     #quant_df is huge leaving out for testing purposes.[mean_df, count_df,  median_df, std_df,  min_df, max_df]  
-    return [mean_df, df_min_std,  median_df, std_df,  min_df, max_df]   
+    return [mean_df, df_count_std,  median_df, std_df,  min_df, max_df]   
 
 
 
