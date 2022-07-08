@@ -539,7 +539,7 @@ def send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema):
     for i in df_list: #this call back is causing the issue... data, frames are aleady built, so it's failing here FIX THIS
         columnlist.append(i.columns.to_list())
     print(columnlist)
-    table_name_list = [f'QA_count_descriptive_stats_{schema1}']
+    table_name_list = [f'QA_descriptive_stats_{schema1}']
     print(table_name_list)
 
     #add datetime stamp to run -------> this needs to be done
