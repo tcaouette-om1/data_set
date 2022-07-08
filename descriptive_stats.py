@@ -367,7 +367,7 @@ def build_big_df(df_dict,table_col_dict,schema):
         df_new_max =df_max.merge(df1, how='inner',left_on='MAX_column', right_on='Groupby_Count')
         df_max_context = df_new_max[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','MAX_column']]
         df_max_context.columns =['Schema_column','Table_column','Column_column','Item_Max','MAX_column']
-        list_max.append(df_max_context)
+        list_max.append(df_max)
         #print(df_max_context)
 
         df_min =pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()).min().reset_index(name='MIN_column')
@@ -380,7 +380,7 @@ def build_big_df(df_dict,table_col_dict,schema):
         df_new_min =df_min.merge(df1, how='inner',left_on='MIN_column', right_on='Groupby_Count')
         df_min_context = df_new_min[['Schema_column_x','Table_column_x','Column_column_x','Unique_Item','MIN_column']]
         df_min_context.columns =['Schema_column','Table_column','Columnv','Item_Min','MIN_column']
-        list_min.append(df_min_context)
+        list_min.append(df_min)
     
         #df_diff = pd.concat([df_max_context,df_min_context]).drop_duplicates(keep=False)
         #print(df_diff)
@@ -395,9 +395,9 @@ def build_big_df(df_dict,table_col_dict,schema):
     median_df['Median_Groupby_Count'] =median_df['Median_Groupby_Count'].apply(str)
     std_df =pd.concat(list_std_df)
     min_df =pd.concat(list_min)
-    min_df['Item_Min'] = min_df['Item_Min'].apply(str)
+    #min_df['Item_Min'] = min_df['Item_Min'].apply(str)
     max_df =pd.concat(list_max)
-    max_df['Item_Max'] = max_df['Item_Max'].astype('str')
+    #max_df['Item_Max'] = max_df['Item_Max'].astype('str')
     #print(max_df.dtypes)
     ##max_df.columns=max_df.columns.str.upper()
     #print(max_df)
@@ -411,12 +411,12 @@ def build_big_df(df_dict,table_col_dict,schema):
     df_count_mean = pd.merge(count_df,mean_df,left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
     df_count_median = pd.merge(df_count_mean,median_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
     df_count_std = pd.merge(df_count_median,std_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
-    #df_max_std = pd.merge(df_count_std,max_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
-   # df_min_std = pd.merge(df_max_std,min_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
+    df_max_std = pd.merge(df_count_std, max_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
+    df_min_std = pd.merge(df_max_std, min_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
 
 
     #quant_df is huge leaving out for testing purposes.[mean_df, count_df,  median_df, std_df,  min_df, max_df]  
-    return [mean_df, df_count_std,  median_df, std_df,  min_df, max_df]   
+    return [mean_df, df_min_std,  median_df, std_df,  min_df, max_df]   
 
 
 
