@@ -417,7 +417,7 @@ def build_big_df(df_dict,table_col_dict,schema):
 
 
     #quant_df is huge leaving out for testing purposes.[mean_df, count_df,  median_df, std_df,  min_df, max_df]  
-    return [mean_df, df_min_std,  median_df, std_df,  min_df, max_df]   
+    return [df_min_std]   
 
 
 
@@ -539,7 +539,7 @@ def send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema):
     for i in df_list: #this call back is causing the issue... data, frames are aleady built, so it's failing here FIX THIS
         columnlist.append(i.columns.to_list())
     print(columnlist)
-    table_name_list = [f'QA_mean_values_{schema1}',f'QA_count_percent_values_{schema1}',f'QA_count_median_values_{schema1}',f'QA_std_values_{schema1}',f'QA_min_values_{schema1}',f'QA_max_values_{schema1}']
+    table_name_list = [f'QA_count_descriptive_stats_{schema1}']
     print(table_name_list)
 
     #add datetime stamp to run -------> this needs to be done
