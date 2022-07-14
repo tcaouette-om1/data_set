@@ -44,5 +44,23 @@ Now after all dependencies have been successfully downloaded you're ready to run
 
 # RUN THE TOOL
 
+A tip to running the tool is to change directory until you are in the directory of the python file.
+this can be done by something like this:
+    > cd GitHub/research/CI/Validation/descriptive_stats/
 
+You will need the copied directory as the first argument.
+
+- python descriptive_stats.py
+- u is the user
+- r is the role
+- d is the database
+- s is the schema
+
+This is how the input for running the tool on UH transformed mapped would look like
+
+> python descriptive_stats.py -u tcaouette -r ngr_exact_sciences -d ngr_exact_sciences -s UNIVERSITY_HOSPITALS_TRANSFORMED_mapped 
+
+Then let the tool do its thing, you may need to input your authentication code in the very beginning,
+and this hits the ID environment 3 times so you may notice three new tabs
+in your browser.
 
