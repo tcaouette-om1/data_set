@@ -35,6 +35,9 @@ The location of your GitHub directories will vary.
 
 Before using the the tool it is advised to create a virtual environment to package all libraries needed
 for running the tool.
+- > pip install virtualenv to install virtualenv, but you can use whichever python virtual environment. 
+- **While in the correct diretory i.e. the directory where the tool lives enter the following: > virtualenv venv**
+venv is the name given to the virtual environment you can use whatever you like, venv was used to keep things consistent.
 - **ensure you're in the correct directory where the tool lives**
 - > source venv/bin/activate this activates the virtual environment
 - > $ pip install -r requirements
