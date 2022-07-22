@@ -103,3 +103,6 @@ def tables_schema(schema,cs_id):
 
     table_names = df_tables['table_name'].to_list()
     return table_names    
+
+# dynamically grab tables in schema, then each table into dataframe, column by column --- focus on diagnosis codes, patient age, other codes - length
+# 
