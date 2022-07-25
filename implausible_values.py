@@ -186,7 +186,7 @@ def percent_threshold(df):
 
 def plausibility(df):
     #plausibility of whether code is assigned typically to male or female genders use codes_procedures function
-    #plausibility of dates in tables, 1950 this comes from OMOP will use date checker function
+    #plausibility of dates in tables, less than 1950 this comes from OMOP will use date checker function
     return df
 
 def codes_procedures(df):
