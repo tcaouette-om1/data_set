@@ -96,7 +96,7 @@ def new_query(query,cs_id): #this one is the better one
 def tables_schema(schema,cs_id):
     sql_tables = f'''show tables in {schema} ''' #always ordered by table_name alphabetically
 
-    df_tables = new_query(cs_id,sql_tables)
+    df_tables = new_query(sql_tables,cs_id)
     df_tables.columns =['created_on','table_name','database_name','schema_name','kind','comment',
     'cluster_by','rows','bytes','owner','retention_time','auto_cluster','change_tracking','search_op',
     'search_op_prog','search_op_bytes','is_external']
@@ -106,3 +106,122 @@ def tables_schema(schema,cs_id):
 
 # dynamically grab tables in schema, then each table into dataframe, column by column --- focus on diagnosis codes, patient age, other codes - length
 # 
+def rename_columns(table_names,cs_id):
+    table_col =['table_name',	'schema_name',	'column_name',	'data_type',	'null',	'default',	'kind',	'expression',	'comment',	'database_name',	'autoincrement']
+    df_all_list =[]
+    for table in table_names:
+        select_columns = f'''show columns in table {table}''' #always from left to right
+        df_all_list.append(new_query(select_columns,cs_id))
+
+    #normalize and apply the column headers to the df so that is in the correct format.
+    #create dictionary that has table name the list of column names... apply at will
+    #column names are needed to rename the columns in the next section. without these lists the headers are not in a good format.
+
+    norm_df_list =[]
+    for df in df_all_list:
+        df.columns = table_col
+        norm_df_list.append(df)
+    print(norm_df_list)
+    #   creates list of lists, those lists are the column names of every table---> should create dictionary with key being table name values list of column names
+    list_columns =[]
+    for df in norm_df_list:
+        list_columns.append(df['column_name'].tolist())
+    #dictionary! zip table_names & list_columns --> {table_name:[[column_names]]}
+    table_col_dict = {}
+    for k, v in zip(table_names, list_columns):
+        table_col_dict.setdefault(k, []).append(v)
+    #to access column headers for each df i=table_name [0] accesses the column value list which will be used to apply the new df headers
+    #test run will be limit of 10 rows per dataframe
+    # new dfs add limit 10 for testing
+    all_sql_list =[]
+    for k in table_names:
+        df_sql = f'''select * from {k} '''
+        all_sql_list.append(df_sql)   
+    #print(all_sql_list)
+    df_list =[]   
+
+    for sql in all_sql_list:
+    #df_list.append(fetch_pandas_old(cs_id,sql))
+        df_list.append(new_query(sql,cs_id))
+    #time.sleep(5.5)
+
+
+    #dictionary tablenames and dataframes
+    df_dict = {}
+    for k, v in zip(table_names, df_list):
+        df_dict.setdefault(k, []).append(v)
+    #print(df_dict)
+
+    return df_dict, table_col_dict
+
+
+def build_big_df(df_dict,table_col_dict,schema):
+    pairs = [   (key, value) 
+            for key, values in table_col_dict.items() 
+            for value in values[0] ]
+    for pair in pairs:
+    #print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
+
+        #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
+        #df_all_count = pd.DataFrame(df_dict[pair[0]][0][pair[1]])
+        #df_all_count = df_all_count.count().reset_index(name='Object_Count')
+        #df_all_count.columns =['Column_column','Object_Count']
+
+        df1 = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'GroupbyCount')) #list of groupby count dfs
+
+# 
+def date_checker(df):
+    list_of_dates =datetime.datetime.now()
+    #if column lower(name) is like date, dttm
+    #   if table_column is like patient and if column is like birth and date field is year only, then year today - year birth = age
+    # if age is <2 and >110 then flag false = out of range
+    return list_of_dates
+    
+
+def percent_threshold(df):
+    # add column to df with % threshold, true false flag for each field.
+    # this is for tables that generally have patient ids
+    # tables --> patient, diagnosis, encounter, med_order, med_admin
+    return df
+
+def plausibility(df):
+    #plausibility of whether code is assigned typically to male or female genders use codes_procedures function
+    #plausibility of dates in tables, 1950 this comes from OMOP will use date checker function
+    return df
+
+def codes_procedures(df):
+    #function to get procedures and map to either male or female genders.
+    return df
+
+def build_final_df(df):
+    main_df=pd.DataFrame()
+    #builds final df from previous functions.
+    return main_df
+
+
+def main():
+    #clean the code and add back the original percentage and quantiles... possibly min/max
+    #cs_id, ctx_id,schema1,cs_id_new,ctx_id_new,schema,user,database,role
+    cs_id, ctx_id,schema1,cs_id_new,ctx_id_new,schema,user,database,role = get_terminal() #new function for terminal input. 
+    table_names = tables_schema(schema1,cs_id)
+    print(table_names)
+    df_dict, table_col_dict = rename_columns(table_names,cs_id)
+    #print(df_dict)
+    print(table_col_dict)
+    #build_big_df(df_dict,table_col_dict)
+    #df_list = build_big_df(df_dict,table_col_dict,schema1)
+    cs_id.close()
+
+    print('DATAFRAMES BUILT')
+    # create df
+    # now that the table is created, append to it
+
+    #append_table('table_test', 'append', None, df2)
+
+    #send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema)
+    cs_id_new.close()
+
+    print('CHECK DATABASE---FINISHED PROCESSING')
+   
+if __name__ == "__main__":
+  main()
