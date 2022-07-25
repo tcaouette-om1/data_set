@@ -252,7 +252,7 @@ def percentile(n):
 
 
 # create a list for each dataframe type... append the DF's with normalized column names and concat the list of DF's into ONE DF per type. These will be the DF's exported to SF.
-def build_big_df(df_dict,table_col_dict,schema):
+def build_big_df(df_dict,table_col_dict,schema,user):
     pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
@@ -414,6 +414,8 @@ def build_big_df(df_dict,table_col_dict,schema):
     df_max_std = pd.merge(df_count_std, max_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
     df_min_std = pd.merge(df_max_std, min_df, left_on=['Schema_column','Table_column','Column_column'], right_on=['Schema_column','Table_column','Column_column'])
     df_min_std.drop(['index_x','index_y'], axis=1, inplace=True)
+    df_min_std.insert(0,'run_date',datetime.datetime.now(),True)
+    df_min_std.insert(1,'user',user,True)
 
 
     #quant_df is huge leaving out for testing purposes.[mean_df, count_df,  median_df, std_df,  min_df, max_df]  
@@ -612,7 +614,7 @@ def main():
     
 
     #build_big_df(df_dict,table_col_dict)
-    df_list = build_big_df(df_dict,table_col_dict,schema1)
+    df_list = build_big_df(df_dict,table_col_dict,schema1,user)
     cs_id.close()
 
     print('DATAFRAMES BUILT')
