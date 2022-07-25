@@ -155,24 +155,34 @@ def rename_columns(table_names,cs_id):
     return df_dict, table_col_dict
 
 
-def build_big_df(df_dict,table_col_dict,schema):
+def build_big_df(df_dict,table_col_dict,schema,user):
     pairs = [   (key, value) 
             for key, values in table_col_dict.items() 
             for value in values[0] ]
     for pair in pairs:
     #print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
-
+        #df_dict[pair[0]][0] is the data frame its self.
         #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
         #df_all_count = pd.DataFrame(df_dict[pair[0]][0][pair[1]])
         #df_all_count = df_all_count.count().reset_index(name='Object_Count')
         #df_all_count.columns =['Column_column','Object_Count']
 
-        df1 = pd.DataFrame(df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count().reset_index(name = 'GroupbyCount')) #list of groupby count dfs
+        df1 = pd.DataFrame(df_dict[pair[0]][0]) #list of groupby count dfs
+        df1.insert(0,'Table_column',pair[0],True)
+    #    df1.insert(2,'Column_column',pair[1],True)
+    # 
+    return print(df1)
 
 # 
 def date_checker(df):
     list_of_dates =datetime.datetime.now()
-    #if column lower(name) is like date, dttm
+    # might be able to just use dtypes here. 
+    # look at patient table to see if it needs conversion to datetime or not.
+    # df.columns.tolist()if column lower(name) is like date, dttm
+    for i in df.columns.tolist():
+        if 'date' or 'dttm' in i.lower():
+        df.i 
+
     #   if table_column is like patient and if column is like birth and date field is year only, then year today - year birth = age
     # if age is <2 and >110 then flag false = out of range
     return list_of_dates
@@ -207,9 +217,9 @@ def main():
     print(table_names)
     df_dict, table_col_dict = rename_columns(table_names,cs_id)
     #print(df_dict)
-    print(table_col_dict)
     #build_big_df(df_dict,table_col_dict)
-    #df_list = build_big_df(df_dict,table_col_dict,schema1)
+    df_list = build_big_df(df_dict,table_col_dict,schema1,user)
+
     cs_id.close()
 
     print('DATAFRAMES BUILT')
