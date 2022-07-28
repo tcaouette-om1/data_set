@@ -155,33 +155,53 @@ def rename_columns(table_names,cs_id):
     return df_dict, table_col_dict
 
 
-def build_big_df(df_dict,table_col_dict,schema,user):
-    pairs = [   (key, value) 
-            for key, values in table_col_dict.items() 
-            for value in values[0] ]
-    for pair in pairs:
-    #print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
-        #df_dict[pair[0]][0] is the data frame its self.
-        #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
-        #df_all_count = pd.DataFrame(df_dict[pair[0]][0][pair[1]])
-        #df_all_count = df_all_count.count().reset_index(name='Object_Count')
-        #df_all_count.columns =['Column_column','Object_Count']
+def buil_dfs(some_dict,some_key):
 
-        df1 = pd.DataFrame(df_dict[pair[0]][0]) #list of groupby count dfs
-        df1.insert(0,'Table_column',pair[0],True)
-    #    df1.insert(2,'Column_column',pair[1],True)
-    # 
-    return print(df1)
+    res = [val for key, val in some_dict.items() if some_key in key]
+    df = pd.DataFrame(res[0][0])
+    return df
+
+def patient_tests(df_dict,schema,user):
+    patient_key = 'PATIENT'
+    df_pts = buil_dfs(df_dict, patient_key)
+    return print(df_pts.head())
+
+        #if str(key).lower() in 'patient':
+          #  print(df_dict[key][0])
+#def build_big_df(df_dict,table_col_dict,schema,user):
+#     list_df=[]
+
+#     pairs = [   (key, value) 
+#             for key, values in table_col_dict.items() 
+#             for value in values[0] ]
+#     for pair in pairs:
+#     #print(f'''Table {pair[0]} and Column {pair[1]} Unique Values == {df_dict[pair[0]][0][pair[1]].unique()}''')
+#         #df_dict[pair[0]][0] is the data frame its self.
+#         #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
+#         #df_all_count = pd.DataFrame(df_dict[pair[0]][0][pair[1]])
+#         #df_all_count = df_all_count.count().reset_index(name='Object_Count')
+#         #df_all_count.columns =['Column_column','Object_Count']
+
+#         df1 = pd.DataFrame(df_dict[pair[0]][0]) #list of groupby count dfs
+#       #  if 'PATIENT'
+#         #df1.insert(0,'Table_column',pair[0],True)
+#     #    df1.insert(2,'Column_column',pair[1],True)
+
+#         list_df.append(df1)
+#         imp_df = pd.concat(list_df)
+#     return imp_df
 
 # 
+# build functions for specific tests. Dates 
 def date_checker(df):
     list_of_dates =datetime.datetime.now()
+    # grab the table name and column name to insert in the what test it is.
     # might be able to just use dtypes here. 
     # look at patient table to see if it needs conversion to datetime or not.
     # df.columns.tolist()if column lower(name) is like date, dttm
-    for i in df.columns.tolist():
-        if 'date' or 'dttm' in i.lower():
-        df.i 
+    #for i in df.columns.tolist():
+    #    if 'date' or 'dttm' in i.lower():
+        #df.i 
 
     #   if table_column is like patient and if column is like birth and date field is year only, then year today - year birth = age
     # if age is <2 and >110 then flag false = out of range
@@ -214,18 +234,24 @@ def main():
     #cs_id, ctx_id,schema1,cs_id_new,ctx_id_new,schema,user,database,role
     cs_id, ctx_id,schema1,cs_id_new,ctx_id_new,schema,user,database,role = get_terminal() #new function for terminal input. 
     table_names = tables_schema(schema1,cs_id)
-    print(table_names)
+    #print(table_names)
     df_dict, table_col_dict = rename_columns(table_names,cs_id)
+    print("START OF DICTIONARY")
     #print(df_dict)
     #build_big_df(df_dict,table_col_dict)
-    df_list = build_big_df(df_dict,table_col_dict,schema1,user)
+    patient_tests(df_dict,schema,user)
+    #filter_df(df_dict,schema,user)
+    #df_list = build_big_df(df_dict,table_col_dict,schema1,user)
+    #print(df_list)
 
     cs_id.close()
 
     print('DATAFRAMES BUILT')
     # create df
     # now that the table is created, append to it
-
+    # directory where I'll test output then will just write to snowflake db '/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/result.csv'
+    file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/implausible_testing.csv'
+    #df_list.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
     #append_table('table_test', 'append', None, df2)
 
     #send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema)
