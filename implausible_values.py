@@ -168,7 +168,7 @@ def patient_tests(df_dict,schema,user):
     #filter_col = [col for col in df_pts.columns if col in datelist] # probably create another helper function with this.
     #filter_col = df_pts[df_pts.str.contains('|'.join(datelist))]
     filter_col= df_pts.filter(regex='|'.join(datelist))
-    return print(filter_col)
+    return filter_col
 
         #if str(key).lower() in 'patient':
           #  print(df_dict[key][0])
@@ -187,25 +187,23 @@ def patient_tests(df_dict,schema,user):
 
 # 
 # build functions for specific tests. Dates 
-def date_checker(df,filter_col):
+def date_checker(df):
     list_of_dates =datetime.datetime.now()
-    currentDay = datetime.now().day
-    currentMonth = datetime.now().month
-    currentYear = datetime.now().year
-    column_name = filter_col
+    currentDay = datetime.datetime.now().day
+    currentMonth = datetime.datetime.now().month
+    currentYear = datetime.datetime.now().year
+    column_name = df.columns.tolist()
+    print(currentYear)
+    for i in df.columns.tolist():
+        if 'YEAR' and 'BIRTH' in i:
+           #df = df[i].subtract(currentYear)
+           print(i) 
+        
     # grab the table name and column name to insert in the what test it is.
     # might be able to just use dtypes here. 
     # look at patient table to see if it needs conversion to datetime or not.
-    # df.columns.tolist()if column lower(name) is like date, dttm
-    #for i in df.columns.tolist():
-    #    if 'date' or 'dttm' in i.lower():
-        #df.i 
-    df.filter
-    if 'year' and 'birth' in column_name:
-        currentYear - df
-    #   if table_column is like patient and if column is like birth and date field is year only, then year today - year birth = age
-    # if age is <2 and >110 then flag false = out of range
-    return list_of_dates
+
+    return print("I LIKE THIS")
     
 
 def percent_threshold(df):
@@ -239,7 +237,8 @@ def main():
     print("START OF DICTIONARY")
     #print(df_dict)
     #build_big_df(df_dict,table_col_dict)
-    patient_tests(df_dict,schema,user)
+    filter_col = patient_tests(df_dict,schema,user)
+    date_checker(filter_col)
     #filter_df(df_dict,schema,user)
     #df_list = build_big_df(df_dict,table_col_dict,schema1,user)
     #print(df_list)
