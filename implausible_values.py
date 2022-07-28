@@ -195,8 +195,8 @@ def date_checker(df):
     column_name = df.columns.tolist()
     print(currentYear)
     for i in df.columns.tolist():
-        if 'YEAR' and 'BIRTH' in i:
-           #df = df[i].subtract(currentYear)
+        if 'YEAR' in i and 'BIRTH' in i:
+           df = df[i].astype(int).subtract(int(currentYear))
            print(i) 
         
     # grab the table name and column name to insert in the what test it is.
