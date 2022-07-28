@@ -162,9 +162,13 @@ def buil_dfs(some_dict,some_key):
     return df
 
 def patient_tests(df_dict,schema,user):
+    datelist= ['date','year','DATE','YEAR','dttm','DTTM']
     patient_key = 'PATIENT'
     df_pts = buil_dfs(df_dict, patient_key)
-    return print(df_pts.head())
+    #filter_col = [col for col in df_pts.columns if col in datelist] # probably create another helper function with this.
+    #filter_col = df_pts[df_pts.str.contains('|'.join(datelist))]
+    filter_col= df_pts.filter(regex='|'.join(datelist))
+    return print(filter_col)
 
         #if str(key).lower() in 'patient':
           #  print(df_dict[key][0])
@@ -179,22 +183,16 @@ def patient_tests(df_dict,schema,user):
 #         #df_dict[pair[0]][0] is the data frame its self.
 #         #print(f'''Table {pair[0]} and Column {pair[1]} Counts Group By Column == {df_dict[pair[0]][0].groupby(pair[1])[pair[1]].count()}''')
 #         #df_all_count = pd.DataFrame(df_dict[pair[0]][0][pair[1]])
-#         #df_all_count = df_all_count.count().reset_index(name='Object_Count')
-#         #df_all_count.columns =['Column_column','Object_Count']
 
-#         df1 = pd.DataFrame(df_dict[pair[0]][0]) #list of groupby count dfs
-#       #  if 'PATIENT'
-#         #df1.insert(0,'Table_column',pair[0],True)
-#     #    df1.insert(2,'Column_column',pair[1],True)
-
-#         list_df.append(df1)
-#         imp_df = pd.concat(list_df)
-#     return imp_df
 
 # 
 # build functions for specific tests. Dates 
-def date_checker(df):
+def date_checker(df,filter_col):
     list_of_dates =datetime.datetime.now()
+    currentDay = datetime.now().day
+    currentMonth = datetime.now().month
+    currentYear = datetime.now().year
+    column_name = filter_col
     # grab the table name and column name to insert in the what test it is.
     # might be able to just use dtypes here. 
     # look at patient table to see if it needs conversion to datetime or not.
@@ -202,7 +200,9 @@ def date_checker(df):
     #for i in df.columns.tolist():
     #    if 'date' or 'dttm' in i.lower():
         #df.i 
-
+    df.filter
+    if 'year' and 'birth' in column_name:
+        currentYear - df
     #   if table_column is like patient and if column is like birth and date field is year only, then year today - year birth = age
     # if age is <2 and >110 then flag false = out of range
     return list_of_dates
