@@ -246,11 +246,11 @@ def date_checker(df):
             if  df[i].dtypes == 'datetime64[ns]':
                 df[f'{i}_TEST'] = df[i].apply(date_tester)
             if df[i].dtypes =='object':
-                df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)               
+                df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True) # this is needed in the other sections to transform null, don't forget to add errors='coerce' to_datetime               
 
-                df[f'{i}_TEST'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f")
+                df[f'{i}_TEST'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f",errors = 'coerce')
                 df[f'{i}_TEST'] = df[f'{i}_TEST'].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
-                df[f'{i}_TEST'] = pd.to_datetime(df[f'{i}_TEST'], format="%Y-%m-%d %H:%M:%S.%f")
+                df[f'{i}_TEST'] = pd.to_datetime(df[f'{i}_TEST'], format="%Y-%m-%d %H:%M:%S.%f",errors = 'coerce')
                 df[f'{i}_TEST'] = df[f'{i}_TEST'].apply(date_tester)
                # else:
                 #    df[f'{i}_TEST'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f")
