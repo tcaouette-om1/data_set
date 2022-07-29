@@ -201,16 +201,20 @@ def birth_date_tester(x): #helper functions
     fail_birth_date = datetime.datetime.strptime('1900-01-01','%Y-%m-%d')
     if x < fail_birth_date:
         return 'F'
-    else:
+    elif x > fail_birth_date:
         return 'P'
+    else:
+        return 'N'
 
 def date_tester(x):
     #need to add in NULL string into this... return N
     fail_date =datetime.datetime.strptime('1950-01-01','%Y-%m-%d')
     if x < fail_date:
         return 'F'
-    else:
+    elif x > fail_date:
         return 'P'
+    else:
+        return 'N'
 
 
 # 
@@ -241,12 +245,18 @@ def date_checker(df):
         if 'DTTM' in i:
             if  df[i].dtypes == 'datetime64[ns]':
                 df[f'{i}_TEST'] = df[i].apply(date_tester)
-                print(df[f'{i}_TEST'])
             if df[i].dtypes =='object':
+                df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)               
+
                 df[f'{i}_TEST'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f")
                 df[f'{i}_TEST'] = df[f'{i}_TEST'].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
                 df[f'{i}_TEST'] = pd.to_datetime(df[f'{i}_TEST'], format="%Y-%m-%d %H:%M:%S.%f")
                 df[f'{i}_TEST'] = df[f'{i}_TEST'].apply(date_tester)
+               # else:
+                #    df[f'{i}_TEST'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f")
+                #    df[f'{i}_TEST'] = df[f'{i}_TEST'].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+                #    df[f'{i}_TEST'] = pd.to_datetime(df[f'{i}_TEST'], format="%Y-%m-%d %H:%M:%S.%f")
+                    #df[f'{i}_TEST'] = df[f'{i}_TEST'].apply(date_tester)
     
         
     # grab the table name and column name to insert in the what test it is.
