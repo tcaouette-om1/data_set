@@ -228,10 +228,12 @@ def date_checker(df):
     print(currentYear)
     for i in df.columns.tolist():
         if 'YEAR' in i and 'BIRTH' in i:
+            #df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
             df['AGE'] = df[i].astype(int).subtract(int(currentYear)).abs()
             df['P_F'] =  df['AGE'].apply(age_groups)
         if 'DATE' in i and 'BIRTH' in i:
             if df[i].dtypes == 'object':
+                #df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
                 df['AGE_2'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f")
                 df['AGE_2'] = df['AGE_2'].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
                 df['AGE_2'] = pd.to_datetime(df['AGE_2'], format="%Y-%m-%d %H:%M:%S.%f")
@@ -239,11 +241,13 @@ def date_checker(df):
                 df['newage'] = (df['AGE_2'] - date_today).astype('timedelta64[Y]').astype('int')
                 df['birth_date_test'] = df['AGE_2'].apply(birth_date_tester)
             if df[i].dtypes == 'datetime64[ns]':
+                #df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
                 df['newage'] = (df['AGE_2'] - date_today).astype('timedelta64[Y]').astype('int')
                 df['birth_date_test'] = df['AGE_2'].apply(birth_date_tester)
 
         if 'DTTM' in i:
             if  df[i].dtypes == 'datetime64[ns]':
+                df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
                 df[f'{i}_TEST'] = df[i].apply(date_tester)
             if df[i].dtypes =='object':
                 df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True) # this is needed in the other sections to transform null, don't forget to add errors='coerce' to_datetime               
@@ -263,7 +267,7 @@ def date_checker(df):
     # might be able to just use dtypes here. 
     # look at patient table to see if it needs conversion to datetime or not.
 
-    return print(df)
+    return df
     
 
 def percent_threshold(df):
@@ -299,7 +303,7 @@ def main():
     #filter_col = patient_tests(df_dict,schema,user)
     #date_checker(filter_col)
     df = encounter_tests(df_dict)
-    date_checker(df)
+    encounter_date_df = date_checker(df)
     #filter_df(df_dict,schema,user)
     #df_list = build_big_df(df_dict,table_col_dict,schema1,user)
     #print(df_list)
@@ -311,7 +315,7 @@ def main():
     # now that the table is created, append to it
     # directory where I'll test output then will just write to snowflake db '/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/result.csv'
     file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/implausible_testing.csv'
-    #df_list.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
+    encounter_date_df.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
     #append_table('table_test', 'append', None, df2)
 
     #send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema)
