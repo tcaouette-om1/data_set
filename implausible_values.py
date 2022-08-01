@@ -162,21 +162,21 @@ def buil_dfs(some_dict,some_key):
     return df
 
 def patient_tests(df_dict,schema,user):
-    datelist= ['date','year','DATE','YEAR','dttm','DTTM']
+    #datelist= ['date','year','DATE','YEAR','dttm','DTTM']
     patient_key = 'PATIENT'
-    df_pts = buil_dfs(df_dict, patient_key)
+    df = buil_dfs(df_dict, patient_key)
     #filter_col = [col for col in df_pts.columns if col in datelist] # probably create another helper function with this.
     #filter_col = df_pts[df_pts.str.contains('|'.join(datelist))]
-    filter_col= df_pts.filter(regex='|'.join(datelist))
-    return filter_col
+    #filter_col= df_pts.filter(regex='|'.join(datelist))
+    return df
 
 def encounter_tests(df_dict):
-    datelist= ['date','year','DATE','YEAR','dttm','DTTM']
+    #datelist= ['date','year','DATE','YEAR','dttm','DTTM']
     encounter_key ='ENCOUNTER'
-    df_enc = buil_dfs(df_dict,encounter_key)
-    filter_col= df_enc.filter(regex='|'.join(datelist))
-    print(filter_col.dtypes)
-    return filter_col
+    df = buil_dfs(df_dict,encounter_key)
+    #filter_col= df_enc.filter(regex='|'.join(datelist))
+    #print(filter_col.dtypes)
+    return df
 
 def date_join(df_pts, df_enc, df_diag):
     df_pts_enc = pd.merge(df_pts,df_enc,left_on=['PATIENT_ID'], right_on=['PATIENT_ID'])
@@ -232,6 +232,10 @@ def date_checker(df):
     currentYear = datetime.datetime.now().year
     column_name = df.columns.tolist()
     print(currentYear)
+    #initial column filtering
+    datelist= ['date','year','DATE','YEAR','dttm','DTTM']
+    df = df.filter(regex='|'.join(datelist))
+
     for i in df.columns.tolist():
         if 'YEAR' in i and 'BIRTH' in i:
             #df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
@@ -252,6 +256,17 @@ def date_checker(df):
                 df[f'{i}_TEST'] = df[f'{i}_TEST'].apply(birth_date_tester)
 
         if 'DTTM' in i:
+            if  df[i].dtypes == 'datetime64[ns]':
+                #df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
+                df[f'{i}_TEST'] = df[i].apply(date_tester)
+            if df[i].dtypes =='object':
+                df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True) # this is needed in the other sections to transform null, don't forget to add errors='coerce' to_datetime               
+                df[f'{i}_TEST'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f",errors = 'coerce')
+                df[f'{i}_TEST'] = df[f'{i}_TEST'].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+                df[f'{i}_TEST'] = pd.to_datetime(df[f'{i}_TEST'], format="%Y-%m-%d %H:%M:%S.%f",errors = 'coerce')
+                df[f'{i}_TEST'] = df[f'{i}_TEST'].apply(date_tester)
+                
+        if 'DATE' in i and 'BIRTH' not in i:
             if  df[i].dtypes == 'datetime64[ns]':
                 #df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
                 df[f'{i}_TEST'] = df[i].apply(date_tester)
