@@ -177,6 +177,12 @@ def encounter_tests(df_dict):
     filter_col= df_enc.filter(regex='|'.join(datelist))
     print(filter_col.dtypes)
     return filter_col
+
+def date_join(df_pts, df_enc, df_diag):
+    df_pts_enc = pd.merge(df_pts,df_enc,left_on=['PATIENT_ID'], right_on=['PATIENT_ID'])
+    df_pts_diag = pd.merge(df_pts,df_diag,left_on=['PATIENT_ID'], right_on=['PATIENT_ID'])
+    return df_pts_enc, df_pts_diag
+
         #if str(key).lower() in 'patient':
           #  print(df_dict[key][0])
 #def build_big_df(df_dict,table_col_dict,schema,user):
@@ -193,6 +199,8 @@ def encounter_tests(df_dict):
 def age_groups(x):
     if x < 2 or x >= 140:
         return 'F'
+    elif x == 'NULL':
+        return 'N'
     else:
         return 'P'
 
@@ -216,8 +224,6 @@ def date_tester(x):
     else:
         return 'N'
 
-
-# 
 # build functions for specific tests. Dates 
 def date_checker(df):
     date_today =datetime.datetime.now()
@@ -229,29 +235,28 @@ def date_checker(df):
     for i in df.columns.tolist():
         if 'YEAR' in i and 'BIRTH' in i:
             #df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
-            df['AGE'] = df[i].astype(int).subtract(int(currentYear)).abs()
-            df['P_F'] =  df['AGE'].apply(age_groups)
+            df[f'{i}_TEST'] = df[i].astype(int).subtract(int(currentYear)).abs()
+            df[f'{i}_TEST'] =  df[f'{i}_TEST'].apply(age_groups)
         if 'DATE' in i and 'BIRTH' in i:
             if df[i].dtypes == 'object':
-                #df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
-                df['AGE_2'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f")
-                df['AGE_2'] = df['AGE_2'].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
-                df['AGE_2'] = pd.to_datetime(df['AGE_2'], format="%Y-%m-%d %H:%M:%S.%f")
+                df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
+                df[f'{i}_TEST'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f",errors = 'coerce')
+                df[f'{i}_TEST'] = df[f'{i}_TEST'].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+                df[f'{i}_TEST'] = pd.to_datetime(df[f'{i}_TEST'], format="%Y-%m-%d %H:%M:%S.%f",errors = 'coerce')
                 
-                df['newage'] = (df['AGE_2'] - date_today).astype('timedelta64[Y]').astype('int')
-                df['birth_date_test'] = df['AGE_2'].apply(birth_date_tester)
+                #df['newage'] = (df['AGE_2'] - date_today).astype('timedelta64[Y]').astype('int')
+                df[f'{i}_TEST'] = df[f'{i}_TEST'].apply(birth_date_tester)
             if df[i].dtypes == 'datetime64[ns]':
                 #df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
                 df['newage'] = (df['AGE_2'] - date_today).astype('timedelta64[Y]').astype('int')
-                df['birth_date_test'] = df['AGE_2'].apply(birth_date_tester)
+                df[f'{i}_TEST'] = df[f'{i}_TEST'].apply(birth_date_tester)
 
         if 'DTTM' in i:
             if  df[i].dtypes == 'datetime64[ns]':
-                df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
+                #df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True)
                 df[f'{i}_TEST'] = df[i].apply(date_tester)
             if df[i].dtypes =='object':
                 df[i].mask(df[i] == 'NULL', datetime.datetime(1, 1, 1, 0, 0), inplace=True) # this is needed in the other sections to transform null, don't forget to add errors='coerce' to_datetime               
-
                 df[f'{i}_TEST'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f",errors = 'coerce')
                 df[f'{i}_TEST'] = df[f'{i}_TEST'].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
                 df[f'{i}_TEST'] = pd.to_datetime(df[f'{i}_TEST'], format="%Y-%m-%d %H:%M:%S.%f",errors = 'coerce')
@@ -262,7 +267,7 @@ def date_checker(df):
                 #    df[f'{i}_TEST'] = pd.to_datetime(df[f'{i}_TEST'], format="%Y-%m-%d %H:%M:%S.%f")
                     #df[f'{i}_TEST'] = df[f'{i}_TEST'].apply(date_tester)
     
-        
+    # next date checks will be birthdate - diagnosis date join on patient_id ---this will be for encounter as well    
     # grab the table name and column name to insert in the what test it is.
     # might be able to just use dtypes here. 
     # look at patient table to see if it needs conversion to datetime or not.
@@ -300,10 +305,10 @@ def main():
     df_dict, table_col_dict = rename_columns(table_names,cs_id)
     print("START OF DICTIONARY")
 
-    #filter_col = patient_tests(df_dict,schema,user)
-    #date_checker(filter_col)
-    df = encounter_tests(df_dict)
-    encounter_date_df = date_checker(df)
+    df = patient_tests(df_dict,schema,user)
+    pts_date_df =date_checker(df)
+    #df = encounter_tests(df_dict)
+    #encounter_date_df = date_checker(df)
     #filter_df(df_dict,schema,user)
     #df_list = build_big_df(df_dict,table_col_dict,schema1,user)
     #print(df_list)
@@ -315,7 +320,7 @@ def main():
     # now that the table is created, append to it
     # directory where I'll test output then will just write to snowflake db '/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/result.csv'
     file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/implausible_testing.csv'
-    encounter_date_df.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
+    pts_date_df.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
     #append_table('table_test', 'append', None, df2)
 
     #send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema)
