@@ -224,6 +224,15 @@ def date_tester(x):
     else:
         return 'N'
 
+def count_P_F_N(df):
+    df_unique = pd.DataFrame()
+    testlist= ['_test','_TEST']
+    df = df.filter(regex='|'.join(testlist))
+    for i in df.columns.tolist():
+       df_unique[f'{i}_UNIQUE'] = df[i].unique()
+    return print(df_unique)
+
+
 # build functions for specific tests. Dates 
 def date_checker(df):
     date_today =datetime.datetime.now()
@@ -336,6 +345,7 @@ def main():
     # directory where I'll test output then will just write to snowflake db '/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/result.csv'
     file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/implausible_testing.csv'
     pts_date_df.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
+    count_P_F_N(pts_date_df)
     #append_table('table_test', 'append', None, df2)
 
     #send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema)
