@@ -224,13 +224,41 @@ def date_tester(x):
     else:
         return 'N'
 
+def pass_or_fail_test(x):
+    if x == 'F':
+        return 'The Test Fails'
+    
+
+
 def count_P_F_N(df):
     df_unique = pd.DataFrame()
+    df_pfn = pd.DataFrame()
+    unique_list =[]
     testlist= ['_test','_TEST']
     df = df.filter(regex='|'.join(testlist))
     for i in df.columns.tolist():
-       df_unique[f'{i}_UNIQUE'] = df[i].unique()
-    return print(df_unique)
+        print(i)
+        if 'F' in df[i].unique().tolist():
+            print(f'TEST FAIL on {i}')
+            df_pfn[f'{i}'] = [f'TEST FAIL on {i}']
+        elif 'N' in df[i].unique().tolist() and 'P' in df[i].unique().tolist():
+            print(f'TEST PASS on {i}')
+            df_pfn[f'{i}'] = [f'TEST PASS on {i}']
+        elif 'N' in df[i].unique().tolist() and 'P' not in df[i].unique().tolist():
+            print(f'The TEST is on Null only data in {i}')
+            df_pfn[f'{i}'] = [f'The TEST is on Null only data in {i}']
+
+        else:
+            print(f'TEST PASS on {i}')
+            df_pfn[f'{i}'] = [f'TEST PASS on {i}']
+
+
+
+    # for i in df_unique.columns.tolist():
+    #     if len(i) > 1:
+    #             df_pfn[f'{i}'] = df_unique.apply(pass_or_fail_test)
+    #         elif 'P' in i and 'N' in i 
+    return df_pfn
 
 
 # build functions for specific tests. Dates 
@@ -331,8 +359,8 @@ def main():
 
     df = patient_tests(df_dict,schema,user)
     pts_date_df =date_checker(df)
-    #df = encounter_tests(df_dict)
-    #encounter_date_df = date_checker(df)
+    df = encounter_tests(df_dict)
+    encounter_date_df = date_checker(df)
     #filter_df(df_dict,schema,user)
     #df_list = build_big_df(df_dict,table_col_dict,schema1,user)
     #print(df_list)
@@ -344,8 +372,11 @@ def main():
     # now that the table is created, append to it
     # directory where I'll test output then will just write to snowflake db '/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/result.csv'
     file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/implausible_testing.csv'
-    pts_date_df.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
-    count_P_F_N(pts_date_df)
+    encounter_date_df.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
+    test_output = count_P_F_N(encounter_date_df)
+    file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/finaloutput_testing.csv'
+    test_output.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
+
     #append_table('table_test', 'append', None, df2)
 
     #send_df_snow(user,database,role,df_list,schema1,cs_id_new,schema)
