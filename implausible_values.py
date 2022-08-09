@@ -224,40 +224,31 @@ def date_tester(x):
     else:
         return 'N'
 
-def pass_or_fail_test(x):
-    if x == 'F':
-        return 'The Test Fails'
-    
+  
 
 
 def count_P_F_N(df):
+    '''Used for all test columns to determine if the column of data pass or fail logic of pass or fail is 
+    easy to determine from the logic in the if statement. This is a hard fail if fail comes up at all in column. '''
     df_unique = pd.DataFrame()
     df_pfn = pd.DataFrame()
     unique_list =[]
     testlist= ['_test','_TEST']
     df = df.filter(regex='|'.join(testlist))
     for i in df.columns.tolist():
-        print(i)
+        #print(i)
         if 'F' in df[i].unique().tolist():
-            print(f'TEST FAIL on {i}')
+            #print(f'TEST FAIL on {i}')
             df_pfn[f'{i}'] = [f'TEST FAIL on {i}']
         elif 'N' in df[i].unique().tolist() and 'P' in df[i].unique().tolist():
-            print(f'TEST PASS on {i}')
+            #print(f'TEST PASS on {i}')
             df_pfn[f'{i}'] = [f'TEST PASS on {i}']
         elif 'N' in df[i].unique().tolist() and 'P' not in df[i].unique().tolist():
-            print(f'The TEST is on Null only data in {i}')
+            #print(f'The TEST is on Null only data in {i}')
             df_pfn[f'{i}'] = [f'The TEST is on Null only data in {i}']
-
         else:
-            print(f'TEST PASS on {i}')
+            #print(f'TEST PASS on {i}')
             df_pfn[f'{i}'] = [f'TEST PASS on {i}']
-
-
-
-    # for i in df_unique.columns.tolist():
-    #     if len(i) > 1:
-    #             df_pfn[f'{i}'] = df_unique.apply(pass_or_fail_test)
-    #         elif 'P' in i and 'N' in i 
     return df_pfn
 
 
