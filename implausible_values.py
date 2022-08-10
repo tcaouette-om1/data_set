@@ -178,6 +178,14 @@ def encounter_tests(df_dict):
     #print(filter_col.dtypes)
     return df
 
+def diagnosis_tests(df_dict):
+    #datelist= ['date','year','DATE','YEAR','dttm','DTTM']
+    diagnosis_key ='DIAGNOSIS'
+    df = buil_dfs(df_dict,diagnosis_key)
+    #filter_col= df_enc.filter(regex='|'.join(datelist))
+    #print(filter_col.dtypes)
+    return df
+
 def date_join(df_pts, df_enc, df_diag):
     df_pts_enc = pd.merge(df_pts,df_enc,left_on=['PATIENT_ID'], right_on=['PATIENT_ID'])
     df_pts_diag = pd.merge(df_pts,df_diag,left_on=['PATIENT_ID'], right_on=['PATIENT_ID'])
@@ -230,9 +238,7 @@ def date_tester(x):
 def count_P_F_N(df):
     '''Used for all test columns to determine if the column of data pass or fail logic of pass or fail is 
     easy to determine from the logic in the if statement. This is a hard fail if fail comes up at all in column. '''
-    df_unique = pd.DataFrame()
     df_pfn = pd.DataFrame()
-    unique_list =[]
     testlist= ['_test','_TEST']
     df = df.filter(regex='|'.join(testlist))
     for i in df.columns.tolist():
@@ -304,11 +310,6 @@ def date_checker(df):
                 df[f'{i}_TEST'] = df[f'{i}_TEST'].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
                 df[f'{i}_TEST'] = pd.to_datetime(df[f'{i}_TEST'], format="%Y-%m-%d %H:%M:%S.%f",errors = 'coerce')
                 df[f'{i}_TEST'] = df[f'{i}_TEST'].apply(date_tester)
-               # else:
-                #    df[f'{i}_TEST'] = pd.to_datetime(df[i], format="%Y-%m-%d %H:%M:%S.%f")
-                #    df[f'{i}_TEST'] = df[f'{i}_TEST'].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
-                #    df[f'{i}_TEST'] = pd.to_datetime(df[f'{i}_TEST'], format="%Y-%m-%d %H:%M:%S.%f")
-                    #df[f'{i}_TEST'] = df[f'{i}_TEST'].apply(date_tester)
     
     # next date checks will be birthdate - diagnosis date join on patient_id ---this will be for encounter as well    
     # grab the table name and column name to insert in the what test it is.
@@ -352,6 +353,8 @@ def main():
     pts_date_df =date_checker(df)
     df = encounter_tests(df_dict)
     encounter_date_df = date_checker(df)
+    df = diagnosis_tests(df_dict)
+    diag_date_df = date_checker(df)
     #filter_df(df_dict,schema,user)
     #df_list = build_big_df(df_dict,table_col_dict,schema1,user)
     #print(df_list)
@@ -365,6 +368,16 @@ def main():
     file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/implausible_testing.csv'
     encounter_date_df.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
     test_output = count_P_F_N(encounter_date_df)
+
+    file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/finaloutput_testing.csv'
+    test_output.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
+
+
+
+    file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/implausible_testing.csv'
+    diag_date_df.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
+
+    test_output = count_P_F_N(diag_date_df)
     file_name ='/Users/tobiascaouette/Documents/Process_Validation/data_set_files_testing/finaloutput_testing.csv'
     test_output.to_csv(file_name, sep='\t', encoding='utf-8') # investigate percent
 
